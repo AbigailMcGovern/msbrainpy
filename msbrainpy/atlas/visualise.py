@@ -1,3 +1,4 @@
+import numpy as np
 import matplotlib.pyplot as plt
 from msbrainpy.atlas.wrangle import matchRows, amalgamateDFs
 
@@ -46,7 +47,7 @@ def plotRegions(pointsArr, df, acronymHeader='acronym', groupHeader='group', nam
 
 
 def plotRegions_Layers(pointsArr, df, name=None, acronymHeader='acronym', groupHeader='group', size=(14, 14),
-                       dpi=300, colours=defaltColours):
+                       dpi=300, colours=defaultColours):
     """
     FUNCTION: Plot values pertaining to layers of cortical regions with only layer annotated.
     ARGUMENTS:

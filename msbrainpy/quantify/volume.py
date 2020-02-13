@@ -8,8 +8,8 @@ from skimage.filters import median
 from skimage.draw import circle_perimeter
 from msbrainpy.base import extraListNesting, getSubsections
 from msbrainpy.chain import Chain, makeChainTemplateDict
-from msbrainpy.io import chunkGenerator
-from msbrainpy.quantify.processing import nuclearDetectionList, correctForChunk
+from msbrainpy.base import chunkGenerator
+from msbrainpy.quantify.processing import nuclearDetectionList, correctForChunk, extractChunkCorrected
 
 
 # note: volume refers to a large volume which must be . Unfortunately confusing choice of wording
