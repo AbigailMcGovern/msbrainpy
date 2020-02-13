@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from msbrainpy.amba.wrangle import matchRows, amalgamateDFs
+from msbrainpy.atlas.wrangle import matchRows, amalgamateDFs
 
 # -------------------------------------------------- Globals -----------------------------------------------------------
 defaultColours = {'prefrontal': 'purple', 'somatomotor': 'pink', 'anterolateral': 'blue', 'temporal': 'green',
