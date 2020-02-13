@@ -597,7 +597,7 @@ def addAcronymCol_name(df, namesCol, tree, header='acronym', loc=0):
     df.insert(loc, header, acronyms)
     return df
 
-def addAcronymCol_id(df, idCol, tree, header='structure_acronym', loc=0)
+def addAcronymCol_id(df, idCol, tree, header='structure_acronym', loc=0):
     acronyms = []
     for ID in df[idCol]:
         try:
