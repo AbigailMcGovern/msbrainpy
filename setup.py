@@ -13,7 +13,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/AbigailMcGovern/msbrainpy",
     packages=setuptools.find_packages('msbrainpy'),
-    package_dir={'', 'msbrainpy'},
+    package_dir={'': 'msbrainpy'},
     py_modules=['chain', 'io', '__init__', 'map', 'teraPrep', 'base'],
     classifiers=[
         "Programming Language :: Python :: 3.6",
