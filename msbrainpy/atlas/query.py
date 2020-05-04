@@ -9,7 +9,7 @@ from allensdk.api.queries.rma_api import RmaApi
 def rmaStructUniQuery(structureList, geneIDs, graph_id=1, product_id=1,
                       options='[only$eq''genes.entrez_id,data_sets.id'']', blockSize=2000,
                       include='structure,section_data_set(genes)', startRow=0,
-                      verbose=True, writeOut=False, maxLen=100):
+                      verbose=True, writeOut=None, maxLen=100):
     """
     FUNCTION: structure unionize model RMA query of AGEA
     ARGUMENTS:
@@ -36,7 +36,7 @@ def rmaStructUniQuery(structureList, geneIDs, graph_id=1, product_id=1,
                                       include=include, startRow=startRow, blockSize=blockSize, verbose=verbose)
         for rows in rowGenObj:
             allRows += rows
-            if writeOut:
+            if writeOut is not None:
                 with open(writeOut, 'w') as outfile:
                     json.dump(allRows, outfile)
                 if verbose:
