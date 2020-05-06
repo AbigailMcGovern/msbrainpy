@@ -17,11 +17,15 @@ dependencies:
   - scikit-image=0.16
   - scipy=1.4
   - PIMS=0.4.1
+  - scikit-learn
   - tifffile
   - pynrrd
   - h5py
   - pandas>=1.0.1
   - pip
   - jinja2
+  - pytest
+  - coverage
+  - keras
   - seaborn
 
