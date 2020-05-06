@@ -4,4 +4,5 @@
 conda env create -f environment.yml
 conda activate msbrainpy
 pip install allensdk
+pip install requests
 sudo python setup.py install
