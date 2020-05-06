@@ -24,4 +24,5 @@ dependencies:
   - pip
   - jinja2
   - seaborn
+  - napari
 
