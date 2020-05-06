@@ -778,7 +778,6 @@ def get_gene_section_paths(gene_section_path, age_id=None):
     for plane_of_section in plane_of_section_directories:
         key = re.compile(r'plane_of_section-[1-2]').findall(plane_of_section)[0]
         paths = get_section_data_set_paths(plane_of_section, age_id=None)
-        print(paths)
         sections_dictionary[key] = {}
         for path in paths:
             key_1 = pattern.findall(path)[0]
@@ -800,7 +799,7 @@ def get_directory_paths(path, pattern):
     paths = []
     pattern = re.compile(pattern)
     for file in os.listdir(path):
-        if pattern.match(file) is not None:
+        if pattern.fullmatch(file) is not None:
             full_path = os.path.join(path, file)
             paths.append(full_path)
     return sorted(paths)
