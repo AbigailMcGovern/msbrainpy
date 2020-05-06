@@ -150,9 +150,9 @@ def generateQueryRows(model, criteria, options='[only$eq''genes.entrez_id,data_s
 
 
 # ----------------------------------------------- Get Gene Images ------------------------------------------------------
-def download_gene_images(entrez_id, age_id=15, product_id=1, verbose=False):
-    download_from_section_data_set(get_section_images, entrez_id, age_id=age_id, product_id=product_id,
-                                   verbose=verbose)
+def download_gene_images(entrez_id, directory_path=None, age_id=15, product_id=1, verbose=False):
+    download_from_section_data_set(get_section_images, entrez_id, directory_path=directory_path, age_id=age_id, 
+                                   product_id=product_id, verbose=verbose)
 
 
 def get_section_images(data_set_id, out_dir, verbose=False):
@@ -201,8 +201,9 @@ def download_image(image_id, filename, return_image=False):
 
 # ------------------------------------------------ Get Gridded Data ----------------------------------------------------
 
-def get_gridded_data(entrez_id, age_id=None, product_id=1, verbose=False):
-    download_from_section_data_set(get_section_grid, entrez_id, age_id=15, product_id=1, verbose=False)
+def get_gridded_data(entrez_id, directory_path=None, age_id=None, product_id=1, verbose=False):
+    download_from_section_data_set(get_section_grid, entrez_id, directory_path=directory_path, age_id=age_id, 
+                                   product_id=product_id, verbose=verbose)
 
 
 def get_section_grid(section_id, out_dir):
@@ -217,10 +218,13 @@ def get_section_grid(section_id, out_dir):
 
 
 # ----------------------------------------------- Find Data Sets -------------------------------------------------------
-def download_from_section_data_set(func, entrez_id, age_id=15, product_id=1, verbose=False):
+def download_from_section_data_set(func, entrez_id, directory_path=None, age_id=15, product_id=1, verbose=False):
     section_data_set = section_data_set_query(entrez_id, plane_of_section=None, product_id=product_id,
                                               verbose=verbose)
     dirname = 'entrez_id_' + str(entrez_id) + '_' + section_data_set['msg'][0]['genes'][0]['acronym']
+    if directory_path is not None:
+        dirname = os.path.join(directory_path, dirname)
+
     if not os.path.exists(dirname):
         os.mkdir(dirname)
     plane_of_section_ids = [row['plane_of_section_id'] for row in section_data_set['msg']]
