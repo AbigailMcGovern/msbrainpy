@@ -1,5 +1,17 @@
 import os
+import re
 import numpy as np
+from skimage import io
+from skimage import exposure
+from skimage import filters
+from skimage import measure
+from skimage import morphology
+from skimage import util
+from skimage.color import rgb2grey
+from skimage.filters import threshold_otsu
+from skimage.transform import rescale
+from sklearn.decomposition import PCA
+# old imports
 from skimage.morphology import opening
 from skimage.morphology import cube
 from skimage.feature import blob_log
@@ -7,6 +19,128 @@ from skimage.draw import circle_perimeter
 from skimage.filters import median
 from tifffile import TiffWriter
 from msbrainpy.base import extraListNesting
+
+
+# ------------------------------------------ 2D In Situ Related Functions ----------------------------------------------
+
+def do_gene_series(directory, out_directory, image_name_pattern=r'image_id-\d*.jpeg', find_tissue_mask=False, 
+                   save_pc1=True):
+    if not os.path.exists(out_directory):
+        os.mkdir(out_directory)
+    # find the files
+    files = []
+    image_name_pattern = re.compile(image_name_pattern)
+    for file in sorted(os.listdir(directory)):
+        match = image_name_pattern.match(file)
+        if match is not None:
+            files.append(os.path.join(directory, match[0]))
+    # iterate though the images
+    image_collection = io.imread_collection(files)
+    for i in range(len(image_collection)):
+        white_balanced = white_balancing(image_collection[i])
+        if find_tissue_mask:
+            tissue_mask, greyscale = tissue_segmentation(white_balanced)
+            mask_name = str(i) + '_tissue_mask.tif'
+            mask_path = os.path.join(out_directory, mask_name)
+            tissue_name = str(i) + '_slice.tif'
+            tissue_path = os.path.join(out_directory, tissue_name)
+            io.imsave(mask_path, tissue_mask)
+            io.imsave(tissue_path, greyscale)
+        segmented, pc1_image = find_expressing_pixels(white_balanced)
+        segmented_name = str(i) + '_segmentation.tif'
+        segmented_path = os.path.join(out_directory, segmented_name)
+        io.imsave(segmented_path, segmented)
+        if save_pc1:
+            pc1_image = util.img_as_ubyte(pc1_image)
+            pc1_image_name = str(i) + '_pc1_greyscale.tif'
+            pc1_image_path = os.path.join(out_directory, pc1_image_name)
+            io.imsave(pc1_image_path, pc1_image)
+
+
+def find_expressing_pixels(image_rgb, binomial_kernel=binomial_kernel_31):
+    highest_var = rgb_PCA(image_rgb.copy())
+    median = filters.median(highest_var)
+    edge_enhanced = filters.sobel(median)
+    binary = edge_enhanced >= threshold_otsu(edge_enhanced)
+    binary = morphology.binary_closing(binary, morphology.disk(3))
+    binary = morphology.remove_small_holes(binary)
+    return binary, highest_var
+
+
+def rgb_PCA(rgb_image, n_components=1, get_component=None):
+    image_dims = rgb_image.shape
+    flattened_image = rgb_image.reshape(-1, 3)
+    pca = PCA(n_components=n_components)
+    highest_var = pca.fit_transform(flattened_image)
+    if get_component is not None:
+        highest_var = highest_var[:, get_component]
+    highest_var = highest_var.reshape((image_dims[0], image_dims[1]))
+    for y in range(highest_var.shape[0]):
+        for x in range(highest_var.shape[1]):
+            if highest_var[y, x] < 0:
+                highest_var[y, x] = 0
+    maximum = np.max(highest_var)
+    highest_var = highest_var/maximum
+    return highest_var
+
+
+# get masks for tissue location for a series of ISH images
+def find_gene_series_masks(directory, out_directory, image_name_pattern=r'image_id-\d*.jpeg'):
+    if not os.path.exists(out_directory):
+        os.mkdir(out_directory)
+    # find the files
+    files = []
+    image_name_pattern = re.compile(image_name_pattern)
+    for file in sorted(os.listdir(directory)):
+        match = image_name_pattern.match(file)
+        if match is not None:
+            files.append(os.path.join(directory, match[0]))
+    # iterate though the images
+    image_collection = io.imread_collection(files)
+    for i in range(len(image_collection)):
+        white_balanced = white_balancing(image_collection[i])
+        tissue_mask, greyscale = tissue_segmentation(white_balanced)
+        mask_name = str(i) + '_tissue_mask.tif'
+        mask_path = os.path.join(out_directory, mask_name)
+        tissue_name = str(i) + '_slice.tif'
+        tissue_path = os.path.join(out_directory, tissue_name)
+        io.imsave(mask_path, tissue_mask)
+        io.imsave(tissue_path, greyscale)
+
+
+# Tissue segmentation - this needs to be improved but seems to work for aligning a series into a volume (so far)
+def tissue_segmentation(image_rgb, disk_denominator=100):
+    grey = rgb2grey(image_rgb.copy())
+    grey = rescale(grey, tissue_scale)
+    grey = exposure.equalize_hist(grey)
+    grey_open = morphology.opening(grey, morphology.square(6))
+    grey = filters.median(grey)
+    threshold = threshold_otsu(grey_open)
+    binary = grey_open <= threshold
+    binary = morphology.binary_closing(binary, morphology.disk(6))
+    labels = measure.label(binary)
+    props = measure.regionprops(labels)
+    biggest = np.argmax([props[i]['area'] for i in range(len(props))]) + 1
+    tissue_mask = labels == biggest
+    selm = morphology.disk(np.mean([grey.shape[0], grey.shape[1]]) // disk_denominator)
+    tissue_mask = morphology.binary_closing(tissue_mask, selm)
+    tissue_mask = morphology.remove_small_holes(tissue_mask, area_threshold=1000)
+    grey = util.img_as_ubyte(grey)
+    return tissue_mask, grey
+
+
+def white_balancing(image_rgb):
+    image = image_rgb.copy()
+    grey = rgb2grey(image_rgb.copy())
+    brightest_index = np.unravel_index(np.argmax(grey, axis=None), grey.shape)
+    r, g, b = image[:, :, 0], image[:, :, 1], image[:, :, 2]
+    brightest_pixel = image[brightest_index[0], brightest_index[1], :]
+    wr, wg, wb = brightest_pixel[0], brightest_pixel[1], brightest_pixel[2]
+    lum = wr + wg + wb
+    r = r * lum / wr
+    g = g * lum / wg
+    b = b * lum / wb
+    return image
 
 
 # ---------------------------------------- Chain functionDictList functions --------------------------------------------

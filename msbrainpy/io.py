@@ -168,3 +168,27 @@ def writeSubsTiff(filedir, filename, data, subsection):
         for i in range(img.shape[0]):
             tiff.save(img[i, :, :])
     return img
+
+
+# ------------------------------------------------ 2D slice images ----------------------------------------------------
+
+    def save_resized_from_directory(directory, image_pattern=r'\d*_pc1_greyscale.tif', scale=0.125, verbose=False,
+                                anti_aliasing=None):
+    image_list = []
+    image_pattern_re = re.compile(image_pattern)
+    for file in os.listdir(directory):
+        match = image_pattern_re.match(file)
+        if match is not None:
+            image_list.append(match[0])
+    if verbose:
+        print('files will be saved in the following location:')
+        print(directory)
+    for file in image_list:
+        image = io.imread(os.path.join(directory, file))
+        image = rescale(image, scale, anti_aliasing=anti_aliasing)
+        image = util.img_as_ubyte(image)
+        new_name = file[:file.find('.tif')] + '_scale-' + str(scale) + '.tif'
+        if verbose:
+            print('Saving file:', new_name)
+        new_name = os.path.join(directory, new_name)
+        io.imsave(new_name, image)
