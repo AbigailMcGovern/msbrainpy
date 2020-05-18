@@ -57,7 +57,7 @@ def do_gene_series(directory, out_directory, image_name_pattern=r'image_id-\d*.j
             io.imsave(pc1_image_path, pc1_image)
 
 
-def find_expressing_pixels(image_rgb, binomial_kernel=binomial_kernel_31):
+def find_expressing_pixels(image_rgb):
     highest_var = rgb_PCA(image_rgb.copy())
     median = filters.median(highest_var)
     edge_enhanced = filters.sobel(median)
@@ -109,7 +109,7 @@ def find_gene_series_masks(directory, out_directory, image_name_pattern=r'image_
 
 
 # Tissue segmentation - this needs to be improved but seems to work for aligning a series into a volume (so far)
-def tissue_segmentation(image_rgb, disk_denominator=100):
+def tissue_segmentation(image_rgb, disk_denominator=100, tissue_scale=0.125):
     grey = rgb2grey(image_rgb.copy())
     grey = rescale(grey, tissue_scale)
     grey = exposure.equalize_hist(grey)
