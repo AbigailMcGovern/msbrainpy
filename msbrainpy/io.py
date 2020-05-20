@@ -19,7 +19,7 @@ def imread_i(directory, i):
     return img
 
 
-def generateFromDiretory(directory, prefix=None, **kwargs):
+def generate_from_diretory(directory, prefix=None, **kwargs):
     if kwargs:
         prefix = kwargs.get('prefix')
     allfiles = os.listdir(directory)
@@ -33,16 +33,16 @@ def generateFromDiretory(directory, prefix=None, **kwargs):
             if _file.endswith('.tif') and _file.startswith(prefix):
                 files.append(_file)
     for _file in files:
-        filePath = os.path.join(directory, _file)
-        img = imread(filePath)
+        file_path = os.path.join(directory, _file)
+        img = imread(file_path)
         # out = {0: img, 1: _file}
         # print(out[1])
         yield img, _file
 
 
 # -------------------------------------------------- Atlas related -----------------------------------------------------
-def readAnnotation(annName, crop=None):  # , ori = None):
-    annotation, header = nrrd.read(annName)
+def read_annotation(ann_name, crop=None):  # , ori = None):
+    annotation, header = nrrd.read(ann_name)
     print("nrrd header for the annotation file:")
     print(header)
     annotation = annotation.astype('int32')
@@ -62,78 +62,78 @@ def readAnnotation(annName, crop=None):  # , ori = None):
     return annotation
 
 
-# ---------------------------------------------- TeraStitcher output ---------------------------------------------------
-def writeCroppedTiffStack(directory, outDir, y_ind, x_ind):
-    fileList = os.listdir(directory)
-    for _file in fileList:
-        imPath = os.path.join(directory, _file)
-        image = imread(imPath)
+# ---------------------------------------------- tera_stitcher output ---------------------------------------------------
+def write_cropped_tiff_stack(directory, out_dir, y_ind, x_ind):
+    file_list = os.listdir(directory)
+    for _file in file_list:
+        im_path = os.path.join(directory, _file)
+        image = imread(im_path)
         image = image[:, y_ind[0]:y_ind[1], x_ind[0]:x_ind[1]]
-        imPath = os.path.join(outDir, _file)
+        im_path = os.path.join(out_dir, _file)
         print('for {}, the new image shape is {}'.format(_file, image.shape))
-        with TiffWriter(imPath, bigtiff=True) as tif:
+        with tiff_writer(im_path, bigtiff=True) as tif:
             for i in range(image.shape[0]):
                 tif.save(image[i, :, :])
-        print('the image {} was saved at:\n {}'.format(_file, imPath))
+        print('the image {} was saved at:\n {}'.format(_file, im_path))
 
 # ----------------------------------------------------- H5 data --------------------------------------------------------
-def writeHDF5_seq(filename, filedir, datasetName, imgDir):
+def write_hdf5_seq(filename, filedir, dataset_name, img_dir):
     '''
     FUNCTION: write a HDF5 file from a series of 3D images (stacked in Z). Writes hdf5 file and a table describing where
         each tiff lives in the hdf5
     ARGUMENTS:
         filename = name for hdf5 output (str)
         filedir = output directory
-        datasetName = name to which the  data will be assigned within the hdf5 file (str)
-        imgDir = directory in which tiffs are sequentially listed (str)
+        dataset_name = name to which the  data will be assigned within the hdf5 file (str)
+        img_dir = directory in which tiffs are sequentially listed (str)
     RETURNS: hdf5 dataset object
     '''
     filepath = os.path.join(filedir, filename)
     files = []
-    for _file in os.listdir(imgDir):
+    for _file in os.listdir(img_dir):
         if _file.endswith('.tif'):
             files.append(_file)
 
-    im1path = os.path.join(imgDir, files[0])
+    im1path = os.path.join(img_dir, files[0])
     im1 = imread(im1path)
     shape1 = im1.shape
     del im1
 
     with h5py.File(filepath, 'w') as h5:
-        dset = h5.create_dataset(datasetName, shape1, dtype=np.uint16, maxshape=(None, shape1[1], shape1[2]),
+        dset = h5.create_dataset(dataset_name, shape1, dtype=np.uint16, maxshape=(None, shape1[1], shape1[2]),
                                  chunks=True)
         started = False
-        startAt = 0
+        start_at = 0
         startpos = []
         endpos = []
         for _file in files:
-            imgPath = os.path.join(imgDir, _file)
-            img = imread(imgPath)
+            img_path = os.path.join(img_dir, _file)
+            img = imread(img_path)
 
             if started == False:
-                dset[startAt:startAt + img.shape[0], :, :] = img
+                dset[start_at:start_at + img.shape[0], :, :] = img
                 started = True
             else:
                 dset.resize(dset.shape[0] + img.shape[0], axis=0)
-                dset[startAt:startAt + img.shape[0], :, :] = img
+                dset[start_at:start_at + img.shape[0], :, :] = img
 
-            print('{} was saved at Z-indicies {}-{} in {}'.format(_file, startAt, dset.shape[0], filepath))
-            startpos.append(startAt)
+            print('{} was saved at Z-indicies {}-{} in {}'.format(_file, start_at, dset.shape[0], filepath))
+            startpos.append(start_at)
             endpos.append(dset.shape[0])
-            startAt += img.shape[0]
+            start_at += img.shape[0]
 
-    positions = pd.DataFrame()
+    positions = pd.data_frame()
     positions['Files'] = files
-    positions['startInH5'] = startpos
-    positions['endInH5'] = endpos
-    positions.to_csv(os.path.join(imgDir, '{}zTable.txt'.format(filename)), sep='\t')
+    positions['start_in_h5'] = startpos
+    positions['end_in_h5'] = endpos
+    positions.to_csv(os.path.join(img_dir, '{}z_table.txt'.format(filename)), sep='\t')
     return dset
 
 
-def openH5data(filedir, filename, dataset=True):
+def open_h5data(filedir, filename, dataset=True):
     filepath = os.path.join(filedir, filename)
     h5file = h5py.File(filepath, 'r')
-    print('A hdf5 file was found at {}. \nThis contains the following datasets:'.format(filepath))
+    print('A hdf5 file was found at {}. \n_this contains the following datasets:'.format(filepath))
     for key in h5file.keys():
         print(key)
     keys = list(h5file.keys())
@@ -142,7 +142,7 @@ def openH5data(filedir, filename, dataset=True):
     return data
 
 # --------------------------------------------- writing from H5 data ---------------------------------------------------
-def saveRandom(data, n, size, prefix, saveDir):
+def save_random(data, n, size, prefix, save_dir):
     shape = data.shape
     sample_z = np.random.choice(shape[0] - size[0], n)
     sample_y = np.random.choice(shape[1] - size[1], n)
@@ -152,22 +152,22 @@ def saveRandom(data, n, size, prefix, saveDir):
         y_end = sample_y[i] + size[1]
         x_end = sample_x[i] + size[2]
         sample = data[sample_z[i]:z_end, sample_y[i]:y_end, sample_x[i]:x_end]
-        fileCoord = '_z{}-{}_y{}-{}_x{}-{}.tif'.format(
+        file_coord = '_z{}-{}_y{}-{}_x{}-{}.tif'.format(
             sample_z[i], z_end, sample_y[i], y_end, sample_x[i], x_end)
-        fileName = prefix + fileCoord
-        filePath = os.path.join(saveDir, fileName)
-        with TiffWriter(filePath) as tif:
+        file_name = prefix + file_coord
+        file_path = os.path.join(save_dir, file_name)
+        with tiff_writer(file_path) as tif:
             tif.save(sample)
 
 
-def writeSubsTiff(filedir, filename, data, subsection):
+def write_subs_tiff(filedir, filename, data, subsection):
     x_st = subsection.pop('x_start')
     x_en = subsection.pop('x_end')
     y_st = subsection.pop('y_start')
     y_en = subsection.pop('x_end')
     img = data[:, y_st:y_en, x_st:x_en]
     filepath = os.path.join(filedir, filename)
-    with TiffWriter(filepath, bigtiff=True) as tiff:
+    with tiff_writer(filepath, bigtiff=True) as tiff:
         for i in range(img.shape[0]):
             tiff.save(img[i, :, :])
     return img

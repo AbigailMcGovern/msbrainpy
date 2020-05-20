@@ -6,10 +6,10 @@ from skimage.morphology import cube
 from skimage.feature import blob_log
 from skimage.filters import median
 from skimage.draw import circle_perimeter
-from msbrainpy.base import extraListNesting, getSubsections
-from msbrainpy.chain import Chain, makeChainTemplateDict
-from msbrainpy.base import chunkGenerator
-from msbrainpy.quantify.processing import nuclearDetectionList, correctForChunk, extractChunkCorrected
+from msbrainpy.base import extra_list_nesting, get_subsections
+from msbrainpy.chain import Chain, make_chain_template_dict
+from msbrainpy.base import chunk_generator
+from msbrainpy.quantify.processing import nuclear_detection_list, correct_for_chunk, extract_chunk_corrected
 
 
 # note: volume refers to a large volume which must be . Unfortunately confusing choice of wording
@@ -17,92 +17,92 @@ from msbrainpy.quantify.processing import nuclearDetectionList, correctForChunk,
 #     Old (hopefully) unnecessary functions).
 
 # ------------------------------------------ Purpose-specific functions ------------------------------------------------
-def sequentialNuclearDetection(data, prefix, outDir, no_y_subs=5, no_x_subs=5, overlap=10,
+def sequential_nuclear_detection(data, prefix, out_dir, no_y_subs=5, no_x_subs=5, overlap=10,
                                selem=6, min_sigma=0.25, max_sigma=5, threshold=0.04, z_size=50):
     """
     FUNCTION: Apply Chain-based nuclear detection to whole data set by dividing data into subsections, which are
         sequentially processed.
     ...
     """
-    subsectionList = getSubsections(data.shape, y=no_y_subs, x=no_x_subs, overlap=overlap)
-    allCoords = []
-    for subsection in subsectionList:
-        sub_result, chain = volumeNuclearDetection(data, prefix, outDir, subsection=subsection, selem=selem,
+    subsection_list = get_subsections(data.shape, y=no_y_subs, x=no_x_subs, overlap=overlap)
+    all_coords = []
+    for subsection in subsection_list:
+        sub_result, chain = volume_nuclear_detection(data, prefix, out_dir, subsection=subsection, selem=selem,
                                                 min_sigma=min_sigma, max_sigma=max_sigma, threshold=threshold,
                                                 z_size=z_size)
-        allCoords.append([sub_result])
+        all_coords.append([sub_result])
 
-    allCoords = np.concatenate(allCoords)
-    name = prefix+'_allSubsectionCoords.txt'
-    savePath = os.path.join(outDir, name)
-    np.savetxt(savePath, allCoords)
-    return allCoords
+    all_coords = np.concatenate(all_coords)
+    name = prefix+'_all_subsection_coords.txt'
+    save_path = os.path.join(out_dir, name)
+    np.savetxt(save_path, all_coords)
+    return all_coords
 
 
-def volumeNuclearDetection(data, prefix, saveDir, subsection=None, selem=6, min_sigma=0.25, max_sigma=5, threshold=0.04,
-                           z_size=50, alsoReturnChain=True):
+def volume_nuclear_detection(data, prefix, save_dir, subsection=None, selem=6, min_sigma=0.25, max_sigma=5, threshold=0.04,
+                           z_size=50, also_return_chain=True):
     """
     FUNCTION: Apply Chain-based nuclear detection to volume of HDf5 dataset. Particular subsection can be specified
-        using subsections produced by the getSubsections() function or a dictionary of the same format.
+        using subsections produced by the get_subsections() function or a dictionary of the same format.
     """
-    functionDictList = nuclearDetectionList(selem=selem, min_sigma=min_sigma, max_sigma=max_sigma,
+    function_dict_list = nuclear_detection_list(selem=selem, min_sigma=min_sigma, max_sigma=max_sigma,
                                             threshold=threshold)
-    result, chain = processVolume(data, functionDictList, subsection, prefix, saveDir, z_size=z_size)
-    if alsoReturnChain:
+    result, chain = process_volume(data, function_dict_list, subsection, prefix, save_dir, z_size=z_size)
+    if also_return_chain:
         return result, chain
     else:
         return result
 
 
 # ------------------------------------------- Chain related functions --------------------------------------------------
-# extractChunkCorrected(result, prefix, saveDir, subsection=None)
-def processVolume(data, functionDictList, subsection, prefix, saveDir, z_size=50,
-                  in_kwargs='chunkGenerator', recordMethod=correctForChunk, record_kwargs='correctForChunk',
-                  writeInfo_recordkw='chunk', writeInfoExists=True, extractMethod=extractChunkCorrected,
-                  extract_kwargs='extractChunkCorrected', alsoReturnChain=True, noSubsection_overlap=0):
+# extract_chunk_corrected(result, prefix, save_dir, subsection=None)
+def process_volume(data, function_dict_list, subsection, prefix, save_dir, z_size=50,
+                  in_kwargs='chunk_generator', record_method=correct_for_chunk, record_kwargs='correct_for_chunk',
+                  write_info_recordkw='chunk', write_info_exists=True, extract_method=extract_chunk_corrected,
+                  extract_kwargs='extract_chunk_corrected', also_return_chain=True, no_subsection_overlap=0):
     """
     FUNCTION: process a volume from a hdf5 data set by reading portions of the data (along z) into memory at a time.
-        this is designed to work with the dictionaries produced by the getSubsections function (which produces coords
+        this is designed to work with the dictionaries produced by the get_subsections function (which produces coords
         for portions of the data, depending on how many tiles should be produced in x
-    ARGUMENTS: for all possible arguments see Chain.__init__.__doc__ or makeChain.__doc__
+    ARGUMENTS: for all possible arguments see Chain.__init__.__doc__ or make_chain.__doc__
          data: a hdf5 dataset from which a part or all of data should be processed
-         subsection (chunkGenerator/extractChunkCorrected): if only a subsection of the data should be examined,
+         subsection (chunk_generator/extract_chunk_corrected): if only a subsection of the data should be examined,
             provide a subsection dictionary. Subsection dictionaries are generated by the
-            msbrainpy.base.getSubsections() function.
-         z_size (chunkGenerator): if using the chunkGenerator function, as is default, the image will be processed in a
+            msbrainpy.base.get_subsections() function.
+         z_size (chunk_generator): if using the chunk_generator function, as is default, the image will be processed in a
             series of overlapping blocks in z. z_size is the voxel depth of these blocks.
-         prefix (correctForChunk/extractChunkCorrected): if using correctForChunk() as the record method
+         prefix (correct_for_chunk/extract_chunk_corrected): if using correct_for_chunk() as the record method
             (as is default), the output of each iteration through chain, will be assumed to be an array containing
             coordinates in :, 0-2 (other cols may contain information about objects at these coordinates).
-            The function will account for the overlap using info about the chunk (which should be the writeInfo
-            in this case - provided by the generator inMethod). The correctForChunk function saves smaller data npy
+            The function will account for the overlap using info about the chunk (which should be the write_info
+            in this case - provided by the generator in_method). The correct_for_chunk function saves smaller data npy
             files throughout the process (as this may be lengthy). The prefix is used to name these files.
             The names also contain information about the substack number (ID) and the position in z. The prefix is also
-            used to name the final concatenated file in the extractChunkCorrected() function.
-         saveDir (correctForChunk): The output directory for the smaller files and the final output file.
+            used to name the final concatenated file in the extract_chunk_corrected() function.
+         save_dir (correct_for_chunk): The output directory for the smaller files and the final output file.
     DEPENDENCIES: Pkg/mod/etc: depends
-    Native: makeProcessVolumeChain() / processVolumeDict() + Chain class, etc.
+    Native: make_process_volume_chain() / process_volume_dict() + Chain class, etc.
     RETURNS: if used with default output settings, coordinates, which will be corrected for overlaps in subsections.
         type = np.ndarray
     """
     if subsection is none:
-        subsection = {'stackID': 0, 'x_start': 0, 'x_end': data.shape[2], 'y_start': 0, 'y_end': data.shape[1],
-                      'overlap': noSubsection_overlap} # one limitation here is that the overlap that will be corrected
+        subsection = {'stack_id': 0, 'x_start': 0, 'x_end': data.shape[2], 'y_start': 0, 'y_end': data.shape[1],
+                      'overlap': no_subsection_overlap} # one limitation here is that the overlap that will be corrected
         #                                                   for will be this number. This means that objects at the
         #                                                   edges will be eliminated when finding coordinates
-    inMethod = chunkGenerator
-    if 'chunkGenerator' in in_kwargs:
-        in_kwargs = {'subsection': subsection, 'z_size': z_size, 'dowhat': None, 'writeInfoExists': writeInfoExists}
-    if 'correctForChunk' in record_kwargs:
-        record_kwargs = {'saveDir': saveDir, 'prefix': prefix}
-    if 'extractChunkCorrected' in extract_kwargs:
-        record_kwargs = {'saveDir': saveDir, 'prefix': prefix, 'subsection': subsection}
-    chain = makeProcessVolumeChain(functionDictList, inMethod=inMethod, in_kwargs=in_kwargs, recordMethod=recordMethod,
-                                   record_kwargs=record_kwargs, writeInfo_recordkw=writeInfo_recordkw,
-                                   writeInfoExists=writeInfoExists, extractMethod=extractMethod,
+    in_method = chunk_generator
+    if 'chunk_generator' in in_kwargs:
+        in_kwargs = {'subsection': subsection, 'z_size': z_size, 'dowhat': None, 'write_info_exists': write_info_exists}
+    if 'correct_for_chunk' in record_kwargs:
+        record_kwargs = {'save_dir': save_dir, 'prefix': prefix}
+    if 'extract_chunk_corrected' in extract_kwargs:
+        record_kwargs = {'save_dir': save_dir, 'prefix': prefix, 'subsection': subsection}
+    chain = make_process_volume_chain(function_dict_list, in_method=in_method, in_kwargs=in_kwargs, record_method=record_method,
+                                   record_kwargs=record_kwargs, write_info_recordkw=write_info_recordkw,
+                                   write_info_exists=write_info_exists, extract_method=extract_method,
                                    extract_kwargs=extract_kwargs)
     result = chain.execute(data=data)
-    if alsoReturnChain:
+    if also_return_chain:
         return result, chain
     else:
         return result
@@ -110,53 +110,53 @@ def processVolume(data, functionDictList, subsection, prefix, saveDir, z_size=50
 
 # just in case (below).
 
-def makeProcessVolumeChain(functionDictList, inMethod=chunkGenerator, in_kwargs=None, recordMethod=correctForChunk,
-                           record_kwargs=None, writeInfo_recordkw='chunk', writeInfoExists=True,
-                           extractMethod=extractChunkCorrected, extract_kwargs=None):
-    template = processVolumeDict(inMethod=inMethod, in_kwargs=in_kwargs, recordMethod=recordMethod,
-                                 record_kwargs=record_kwargs, writeInfo_recordkw=writeInfo_recordkw,
-                                 writeInfoExists=writeInfoExists, extractMethod=extractMethod,
+def make_process_volume_chain(function_dict_list, in_method=chunk_generator, in_kwargs=None, record_method=correct_for_chunk,
+                           record_kwargs=None, write_info_recordkw='chunk', write_info_exists=True,
+                           extract_method=extract_chunk_corrected, extract_kwargs=None):
+    template = process_volume_dict(in_method=in_method, in_kwargs=in_kwargs, record_method=record_method,
+                                 record_kwargs=record_kwargs, write_info_recordkw=write_info_recordkw,
+                                 write_info_exists=write_info_exists, extract_method=extract_method,
                                  extract_kwargs=extract_kwargs)
-    template['functionDictList'] = functionDictList
-    if in_kwargs is None and inMethod is chunkGenerator:
+    template['function_dict_list'] = function_dict_list
+    if in_kwargs is None and in_method is chunk_generator:
         print('prior to executing chain, please ensure that in_kwargs is given an appropriate value')
-    if record_kwargs is None and recordMethod is chunkGenerator:
+    if record_kwargs is None and record_method is chunk_generator:
         print('prior to executing chain, please ensure that record_kwargs is given an appropriate value')
-    if extract_kwargs is None and extractMethod is extractChunkCorrected:
+    if extract_kwargs is None and extract_method is extract_chunk_corrected:
         print('prior to executing chain, please ensure that extract_kwargs is given an appropriate value')
     chain = Chain(**template)
     return chain
 
 
-def processVolumeDict(inMethod=chunkGenerator, in_kwargs=None, recordMethod=correctForChunk,
-                      record_kwargs=None, writeInfo_recordkw='chunk', writeInfoExists=True,
-                      extractMethod=np.concatenate, extract_kwargs=None):
-    template = makeChainTemplateDict()
-    template['inMethod'] = inMethod
+def process_volume_dict(in_method=chunk_generator, in_kwargs=None, record_method=correct_for_chunk,
+                      record_kwargs=None, write_info_recordkw='chunk', write_info_exists=True,
+                      extract_method=np.concatenate, extract_kwargs=None):
+    template = make_chain_template_dict()
+    template['in_method'] = in_method
     template['in_kwargs'] = in_kwargs
-    template['recordMethod'] = recordMethod
+    template['record_method'] = record_method
     template['record_kwargs'] = record_kwargs
-    template['writeInfoExists'] = writeInfoExists
-    template['writeInfo_recordkw'] = writeInfo_recordkw
-    template['extractMethod'] = extractMethod
+    template['write_info_exists'] = write_info_exists
+    template['write_info_recordkw'] = write_info_recordkw
+    template['extract_method'] = extract_method
     template['extract_kwargs'] = extract_kwargs
     return template
 
 
 # Sample-to-volume chain conversion ------------------------
-def processVolumeFromChain(chain, some, more, arguments):
+def process_volume_from_chain(chain, some, more, arguments):
     pass
 
 
-def convertChainToVolume(chain):
+def convert_chain_to_volume(chain):
     chain_ = chain
     pass
 
 
 # ---------------------------------------------- Visualising results ---------------------------------------------------
 
-def getCellsInPlane(shape, points, order, prefix, index, plsmns):
-    cellsImg = np.zeros(shape, dtype=np.uint16)
+def get_cells_in_plane(shape, points, order, prefix, index, plsmns):
+    cells_img = np.zeros(shape, dtype=np.uint16)
     blobs = []
     col = order[0]
     for i in range(len(points[:, col])):
@@ -171,19 +171,19 @@ def getCellsInPlane(shape, points, order, prefix, index, plsmns):
         r, c, rad = y, x, 1
         rr, cc = circle_perimeter(r, c, rad)
         try:
-            cellsImg[rr, cc] = 65535
-        except IndexError:
+            cells_img[rr, cc] = 65535
+        except index_error:
             print('point {}, {}, out of range'.format(y, x))
 
-    saveName = prefix + '_' + str(col) + '_' + str(index) + '.tif'
-    with TiffWriter(saveName) as tif:
-        tif.save(cellsImg)
-    return cellsImg
+    save_name = prefix + '_' + str(col) + '_' + str(index) + '.tif'
+    with tiff_writer(save_name) as tif:
+        tif.save(cells_img)
+    return cells_img
 
 
 # -------------------------------------- Old (hopefully) unnecessary functions -----------------------------------------
 
-def cellsOnly(data, subsection, prefix, outDir, z_size=50,
+def cells_only(data, subsection, prefix, out_dir, z_size=50,
               min_sigma=0.25, max_sigma=10, threshold=0.04, **kwargs):
     """
     FUNCTION: function to sequentially process chunks to retrive cell coordinates
@@ -191,83 +191,83 @@ def cellsOnly(data, subsection, prefix, outDir, z_size=50,
         data = hdf5 data object
         z_size = z size of chunk (int)
         overlap = overlap of chunk (int)
-        min_sigma = minimum sigma for LoG blob detection (smaller for detecting smaller blobs)
-        max_sigma = maximum sigma for LoG blob detection (larger for detecting larger blobs)
+        min_sigma = minimum sigma for lo_g blob detection (smaller for detecting smaller blobs)
+        max_sigma = maximum sigma for lo_g blob detection (larger for detecting larger blobs)
         threshold = intensity threashold for blob detection (lower for fainter cells)
     RETURNS: array with cell coordinates [[z, y, x, sigma], ...]
     """
-    sansBackground = chunkGenerator(data, subsection=subsection, z_size=z_size,
-                                    dowhat=removeBackground_)
-    cellArray = cellsFromBlobChunks(sansBackground, subsection, prefix, outDir, overlap=overlap,
+    sans_background = chunk_generator(data, subsection=subsection, z_size=z_size,
+                                    dowhat=remove_background_)
+    cell_array = cells_from_blob_chunks(sans_background, subsection, prefix, out_dir, overlap=overlap,
                                     min_sigma=min_sigma, max_sigma=max_sigma, threshold=threshold)
 
-    return cellArray
+    return cell_array
 
 
-def cellsFromBlobChunks(sansBackground, subsection, prefix, outDir, overlap, min_sigma=0.25, max_sigma=10,
+def cells_from_blob_chunks(sans_background, subsection, prefix, out_dir, overlap, min_sigma=0.25, max_sigma=10,
                         threshold=0.04):
-    cellArray = []
+    cell_array = []
     y_st = subsection['y_start']
     x_st = subsection['x_start']
-    stackID = subsection['stackID']
-    zPos = 0
+    stack_id = subsection['stack_id']
+    z_pos = 0
     edge = int(np.round(overlap / 2))
-    tempName = prefix + "_substack" + str(stackID) + "_cells"
-    tempPath = os.path.join(outDir, tempName)
-    os.mkdir(tempPath)
-    for chunk in sansBackground:
-        zPos0 = zPos
+    temp_name = prefix + "_substack" + str(stack_id) + "_cells"
+    temp_path = os.path.join(out_dir, temp_name)
+    os.mkdir(temp_path)
+    for chunk in sans_background:
+        z_pos0 = z_pos
         img = chunk
         size = img.shape
         cells = blob_log(img, min_sigma=min_sigma, max_sigma=max_sigma, threshold=threshold)
         x_lim = size[2] - edge
         y_lim = size[1] - edge
         z_lim = size[0] - edge
-        print("{} cells were initially found at z {}:{} in substack {}".format(len(cells), zPos0, zPos0 + size[0],
-                                                                               stackID))
-        outOfBounds = []
+        print("{} cells were initially found at z {}:{} in substack {}".format(len(cells), z_pos0, z_pos0 + size[0],
+                                                                               stack_id))
+        out_of_bounds = []
         for i in range(len(cells[:, 0])):
             if cells[i, 0] > z_lim or cells[i, 1] > y_lim or cells[i, 2] > x_lim:
-                outOfBounds.append(i)
-            if zPos != 0:
+                out_of_bounds.append(i)
+            if z_pos != 0:
                 if cells[i, 0] < edge:
-                    outOfBounds.append(i)
+                    out_of_bounds.append(i)
             if y_st != 0:
                 if cells[i, 1] < edge:
-                    outOfBounds.append(i)
+                    out_of_bounds.append(i)
             if x_st != 0:
                 if cells[i, 2] < edge:
-                    outOfBounds.append(i)
+                    out_of_bounds.append(i)
 
-            cells[i, 0] = cells[i, 0] + zPos
+            cells[i, 0] = cells[i, 0] + z_pos
             cells[i, 1] = cells[i, 1] + y_st
             cells[i, 2] = cells[i, 2] + x_st
 
-        cells = np.delete(cells, outOfBounds, 0)
+        cells = np.delete(cells, out_of_bounds, 0)
 
         if len(cells) != 0:
-            cellArray.append(cells)
-            saveName = "cells_z{}-{}_substack{}".format(zPos0, zPos0 + size[0], stackID)
-            savePath = os.path.join(tempPath, saveName)
-            np.save(savePath, cells, allow_pickle=False)
+            cell_array.append(cells)
+            save_name = "cells_z{}-{}_substack{}".format(z_pos0, z_pos0 + size[0], stack_id)
+            save_path = os.path.join(temp_path, save_name)
+            np.save(save_path, cells, allow_pickle=False)
 
-        zPos += size[0] - overlap
-        print("{} cells were found at z {}:{} in substack {}".format(len(cells), zPos0, zPos0 + size[0], stackID))
+        z_pos += size[0] - overlap
+        print("{} cells were found at z {}:{} in substack {}".format(len(cells), z_pos0, z_pos0 + size[0], stack_id))
 
-    print('A total of {} cells were found in substack {}'.format(len(cellArray), stackID))
-    cellArray = np.concatenate(cellArray)
+    print('A total of {} cells were found in substack {}'.format(len(cell_array), stack_id))
+    cell_array = np.concatenate(cell_array)
 
-    cellsFile = tempName + '.npy'
-    cellsPath = os.path.join(outDir, cellsFile)
-    np.save(cellsPath, cellArray, allow_pickle=False)
+    cells_file = temp_name + '.npy'
+    cells_path = os.path.join(out_dir, cells_file)
+    np.save(cells_path, cell_array, allow_pickle=False)
 
-    return cellArray
+    return cell_array
 
 
-def removeBackground_(data, selem=cube(6)):
+def remove_background_(data, selem=cube(6)):
     img = data
     for i in range(img.shape[0]):
         img[i, :, :] = median(img[i, :, :])
     background = opening(img)
-    sansBackground = img - background
-    return sansBackground
+    sans_background = img - background
+    return sans_background

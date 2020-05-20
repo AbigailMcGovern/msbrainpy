@@ -10,59 +10,59 @@ from msbrainpy.quantify.processing import find_gene_series_masks
 
 # ---------------------------------------------- Get transformations ---------------------------------------------------
 
-def runElastix(elastixBin, movingImage, fixedImage, parameterFiles, outDir):
-    if os.path.exists(outDir) != True:
-        os.mkdir(outDir)
+def run_elastix(elastix_bin, moving_image, fixed_image, parameter_files, out_dir):
+    if os.path.exists(out_dir) != True:
+        os.mkdir(out_dir)
     threads = ' -threads 16'
-    moving = ' -m ' + movingImage
-    fixed = ' -f ' + fixedImage
-    if type(parameterFiles) == str:
-        param = ' -p ' + parameterFiles
-    if type(parameterFiles) == list:
+    moving = ' -m ' + moving_image
+    fixed = ' -f ' + fixed_image
+    if type(parameter_files) == str:
+        param = ' -p ' + parameter_files
+    if type(parameter_files) == list:
         params = []
-        for p in parameterFiles:
+        for p in parameter_files:
             par = ' -p ' + p
             params.append(par)
         param = ''.join(params)
-    out = ' -out ' + outDir
-    cmd = elastixBin + threads + moving + fixed + param + out
+    out = ' -out ' + out_dir
+    cmd = elastix_bin + threads + moving + fixed + param + out
     print('Attempting to execute:')
     print(cmd)
     result = os.system(cmd)
-    return outDir
+    return out_dir
 
 
 # ------------------------------------------- Convert coord resolution  ------------------------------------------------
 
-def resamplePoints(points, origRes, newRes):
+def resample_points(points, orig_res, new_res):
     array = points
     for i in range(len(points)):
-        array[i, 0] = int(np.ceil(array[i, 0] * origRes[0] / newRes[0]))
-        array[i, 1] = int(np.ceil(array[i, 1] * origRes[1] / newRes[1]))
-        array[i, 2] = int(np.ceil(array[i, 2] * origRes[2] / newRes[2]))
+        array[i, 0] = int(np.ceil(array[i, 0] * orig_res[0] / new_res[0]))
+        array[i, 1] = int(np.ceil(array[i, 1] * orig_res[1] / new_res[1]))
+        array[i, 2] = int(np.ceil(array[i, 2] * orig_res[2] / new_res[2]))
     print(array[:5, :])
     return array
 
 
-def correctToXYZ(cellArray):
-    newArray = np.array([cellArray[:, 2], cellArray[:, 1], cellArray[:, 0]])
-    newArray = newArray.T
-    return newArray
+def correct_to_xyz(cell_array):
+    new_array = np.array([cell_array[:, 2], cell_array[:, 1], cell_array[:, 0]])
+    new_array = new_array.T
+    return new_array
 
 
 # ------------------------------------------------ Density analysis  ---------------------------------------------------
 
-def getDensityImg(saveDir, saveName, points, shape, order):
-    img = getVoxelCounts(points, shape, order)
+def get_density_img(save_dir, save_name, points, shape, order):
+    img = get_voxel_counts(points, shape, order)
     img = np.round(img * 1000000 / (16 * 16 * 16))
     img = img.astype(np.uint16)
-    savePath = os.path.join(saveDir, saveName)
-    with TiffWriter(savePath) as tiff:
+    save_path = os.path.join(save_dir, save_name)
+    with tiff_writer(save_path) as tiff:
         tiff.save(img)
     return img
 
 
-def getVoxelCounts(points, shape, order):
+def get_voxel_counts(points, shape, order):
     """
     Expects int style points, not float
     """
@@ -74,67 +74,67 @@ def getVoxelCounts(points, shape, order):
         try:
             ind = (point[z], point[y], point[x])
             img[ind] += 1
-        except IndexError:
+        except index_error:
             print('point {}, {}, {} out of range'.format(point[z], point[y], point[x]))
     return img
 
 
-def transformImg(transformixBin, inTIFF, parameterFiles, outDir, prefix, outName='img_transformed'):
-    outName0 = prefix + "_" + outName
-    outPath = os.path.join(outDir, outName0)
-    outDirNew = os.path.join(outPath, 'result.mhd')
-    if os.path.exists(outPath) != True:
-        os.mkdir(outPath)
-    sourcePath = inTIFF
-    points = ' -in ' + sourcePath
-    out = ' -out ' + outPath
-    param = ' -tp ' + parameterFiles
-    cmd = transformixBin + points + out + param
+def transform_img(transformix_bin, in_tiff, parameter_files, out_dir, prefix, out_name='img_transformed'):
+    out_name0 = prefix + "_" + out_name
+    out_path = os.path.join(out_dir, out_name0)
+    out_dir_new = os.path.join(out_path, 'result.mhd')
+    if os.path.exists(out_path) != True:
+        os.mkdir(out_path)
+    source_path = in_tiff
+    points = ' -in ' + source_path
+    out = ' -out ' + out_path
+    param = ' -tp ' + parameter_files
+    cmd = transformix_bin + points + out + param
     print('Executing the following:')
     print(cmd)
     res = os.system(cmd)
     if res != 0:
         print('An error occured, check the parameters and associated files')
-    return outDirNew
+    return out_dir_new
 
 
 # ------------------------------------------ Coordinates transformation  -----------------------------------------------
 
-def writePointsForTransformix(points, prefix, saveDir, res):
-    saveName = prefix + '_' + str(res) + 'um_coords_xyz_elastixFormat.txt'
-    savePath = os.path.join(saveDir, saveName)
+def write_points_for_transformix(points, prefix, save_dir, res):
+    save_name = prefix + '_' + str(res) + 'um_coords_xyz_elastix_format.txt'
+    save_path = os.path.join(save_dir, save_name)
     header = 'point\n{}'.format(len(points))
-    np.savetxt(savePath, points, header=header, comments='')
-    return savePath
+    np.savetxt(save_path, points, header=header, comments='')
+    return save_path
 
 
 # To be useful, this would require the transformation to be inverse.
-def transformPoints(transformixBin, pointsTXT, parameterFiles, outDir, prefix, outName='points_transformed'):
-    outName0 = prefix + "_" + outName
-    outPath = os.path.join(outDir, outName0)
-    outDirNew = os.path.join(outPath, 'outputpoints.txt')
-    if os.path.exists(outPath) != True:
-        os.mkdir(outPath)
-    sourcePath = pointsTXT
-    points = ' -def ' + sourcePath
-    out = ' -out ' + outPath
-    param = ' -tp ' + parameterFiles
-    cmd = transformixBin + points + out + param
+def transform_points(transformix_bin, points_txt, parameter_files, out_dir, prefix, out_name='points_transformed'):
+    out_name0 = prefix + "_" + out_name
+    out_path = os.path.join(out_dir, out_name0)
+    out_dir_new = os.path.join(out_path, 'outputpoints.txt')
+    if os.path.exists(out_path) != True:
+        os.mkdir(out_path)
+    source_path = points_txt
+    points = ' -def ' + source_path
+    out = ' -out ' + out_path
+    param = ' -tp ' + parameter_files
+    cmd = transformix_bin + points + out + param
     print('Executing the following:')
     print(cmd)
     res = os.system(cmd)
     if res != 0:
         print('An error occured, check the parameters and associated files')
-    return outDirNew
+    return out_dir_new
 
 
-def parseTransformixOutput(filePath):
-    transPoints = open(filePath, 'r')
-    lines = transPoints.readlines()
+def parse_transformix_output(file_path):
+    trans_points = open(file_path, 'r')
+    lines = trans_points.readlines()
     array = np.empty([len(lines), 3], dtype=int)
     for i in range(len(lines)):
         string = lines[i]
-        match = re.findall(r'OutputPoint\s=\s\[\s\d+\.\d+\s\d+\.\d+\s\d+\.\d+', string)
+        match = re.findall(r'output_point\s=\s\[\s\d+\.\d+\s\d+\.\d+\s\d+\.\d+', string)
         if len(match) != 0:
             xyz = re.findall("\d+\.\d+", match[0])
             row = []
@@ -147,23 +147,23 @@ def parseTransformixOutput(filePath):
 
 # ------------------------------------------------------ Other ---------------------------------------------------------
 
-def getAtlasPoints(img, points):
-    cellImg = np.zeros(img.shape, dtype=np.uint32)
+def get_atlas_points(img, points):
+    cell_img = np.zeros(img.shape, dtype=np.uint32)
     indices = np.zeros(points.shape, dtype=int)
     for i in range(len(points)):
         indices[i, :] = [int(np.round(points[i, 2])), int(np.round(points[i, 1])), int(np.round(points[i, 0]))]
     for i in range(len(indices)):
-        if indices[i, 0] >= cellImg.shape[0]:
-            indices[i, 0] = cellImg.shape[0] - 1
-        if indices[i, 1] >= cellImg.shape[1]:
-            indices[i, 1] = cellImg.shape[1] - 1
-        if indices[i, 2] >= cellImg.shape[2]:
-            indices[i, 2] = cellImg.shape[2] - 1
-        cellImg[indices[i, 0], indices[i, 1], indices[i, 2]] += 1
-    return cellImg
+        if indices[i, 0] >= cell_img.shape[0]:
+            indices[i, 0] = cell_img.shape[0] - 1
+        if indices[i, 1] >= cell_img.shape[1]:
+            indices[i, 1] = cell_img.shape[1] - 1
+        if indices[i, 2] >= cell_img.shape[2]:
+            indices[i, 2] = cell_img.shape[2] - 1
+        cell_img[indices[i, 0], indices[i, 1], indices[i, 2]] += 1
+    return cell_img
 
 
-def affineTransform(parameters, COR, points):
+def affine_transform(parameters, COR, points):
     """
     Assumes input points in 2d array w/ r: x, y, z
     Assumes input points are np.ndarray
@@ -202,12 +202,12 @@ def find_volume_coordinates(directory, out_directory, image_name_pattern=r'image
 def get_volume_assembler(tissue_mask_directory, scale_factor=8, tissue_mask_pattern=r'\d*_tissue_mask.tif'):
     dictionary = get_volume_assembler_dict(tissue_mask_directory, scale_factor=scale_factor,
                                            tissue_mask_pattern=tissue_mask_pattern)
-    volume_assembler = VolumeAssembler(dictionary)
+    volume_assembler = volume_assembler(dictionary)
     return volume_assembler
 
 
 def get_volume_assembler_dict(tissue_mask_directory, scale_factor=8, tissue_mask_pattern=r'\d*_tissue_mask.tif'):
-    # initialise the dictionary which will be filled with information about volume assembly (for VolumeAssembler object)
+    # initialise the dictionary which will be filled with information about volume assembly (for volume_assembler object)
     transformation_dictionary = {'coordinates_list' : []}
     # find the files containing tissue masks
     tissue_mask_files = []
@@ -247,7 +247,7 @@ def get_volume_from_series(volume_assembler, series_pattern, directory, scale_fa
     volume = volume_assembler.generate_volume(directory, files)
     return volume
 
-# -------------------------------------------- VolumeAssembler Class ---------------------------------------------------
+# -------------------------------------------- volume_assembler Class ---------------------------------------------------
 class VolumeAssembler:
     def __init__(self, volume_dictionary):
         """
@@ -332,12 +332,12 @@ class VolumeAssembler:
 
 # Some Example Code --------------------------------------------
 # out_name = 'expression_quantification'
-# out_directory = '/Users/amcg0011/Data/InSituData/entrez_id_12064_Bdnf/plane_of_section-1/age_id-15_id-79587720'
+# out_directory = '/Users/amcg0011/Data/in_situ_data/entrez_id_12064_Bdnf/plane_of_section-1/age_id-15_id-79587720'
 # out_directory = os.path.join(out_directory, out_name)
 # save_resized_from_directory(out_directory, image_pattern=r'\d*_pc1_greyscale.tif', scale=0.125)
 #
 # FIND 1/8th ORIGINAL SIZE VOLUME (scale factor refers to how to scale coordinates from the tissue masks, which are 1/8)
 # transform_dict = get_volume_assembler_dict(out_directory, scale_factor=1, tissue_mask_pattern=r'\d*_tissue_mask.tif') 
-# volume_assembler = VolumeAssembler(transform_dict)
+# volume_assembler = volume_assembler(transform_dict)
 # volume = volume_assembler.generate_volume(out_directory, 'age_id-15_id-79587720_pc1.tif', 
 #                                           image_file_pattern=r'\d*_pc1_greyscale_scale-0.125.tif', verbose=True)

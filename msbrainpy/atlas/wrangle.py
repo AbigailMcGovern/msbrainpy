@@ -10,35 +10,35 @@ from skimage.measure import regionprops
 
 # --------------------------------------------------- Globals ----------------------------------------------------------
 
-oapi = OntologiesApi()
+oapi = ontologies_api()
 structure_graph = oapi.get_structures_with_sets([1])
-structure_graph = StructureTree.clean_structures(structure_graph)
-tree = StructureTree(structure_graph)
+structure_graph = structure_tree.clean_structures(structure_graph)
+tree = structure_tree(structure_graph)
 del oapi
 
 # ------------------------------------------- Obtain CSV from json  ----------------------------------------------------
 
-def parseExpressionToDF(fileName, queryList, saveName=None):
+def parse_expression_to_df(file_name, query_list, save_name=None):
     """
-    FUNCTION: pull a specified pd.DataFrame object out of a jsonn file obtained from an AllenSDK:
+    FUNCTION: pull a specified pd.data_frame object out of a jsonn file obtained from an allen_sdk:
         RMA api-based AGEA structure unionize query.
     ARGUMENTS:
-        fileName = json file path (str).
+        file_name = json file path (str).
             Forces you to save the direct database output to json.
             Please keep all of this (regardless of how much you choose to obtain)!
-        queryList = contains (1) the keys from which you wish to obtain data for each row.
+        query_list = contains (1) the keys from which you wish to obtain data for each row.
             (2) if the data you wish to acess is nested provide a list of indexes and or keys by which the
             data can be accessed (ascending depth of key/index).
     DEPENDENCIES: Packages/modules: json, pandas as pd
-    RETURNS: pd.DataFrame
+    RETURNS: pd.data_frame
     """
-    with open(fileName, 'r') as jsonFile:
-        expression = json.load(jsonFile)
-    df = pd.DataFrame()
+    with open(file_name, 'r') as json_file:
+        expression = json.load(json_file)
+    df = pd.data_frame()
     rows = []
     for i in range(len(expression)):
         row = []
-        for query in queryList:
+        for query in query_list:
             if type(query) == str:
                 row.append(expression[i][query])
             if type(query) == list:
@@ -47,64 +47,64 @@ def parseExpressionToDF(fileName, queryList, saveName=None):
                     val = val[query[ii + 1]]
                 row.append(val)
         rows.append(row)
-    for j in range(len(queryList)):
-        query = queryList[j]
+    for j in range(len(query_list)):
+        query = query_list[j]
         if type(query) == list:
             started = False
             for k in range(len(query)):
                 if not started:
-                    colName = str(query[0])
+                    col_name = str(query[0])
                     started = True
                 elif started:
-                    colName = colName + '_' + str(query[k])
+                    col_name = col_name + '_' + str(query[k])
         if type(query) == str:
-            colName = query
+            col_name = query
         values = []
         for i in range(len(rows)):
             row = rows[i]
             value = row[j]
             values.append(value)
-        df.insert(j, colName, values)
-    if saveName != None:
-        df.to_csv(saveName)
+        df.insert(j, col_name, values)
+    if save_name != None:
+        df.to_csv(save_name)
     return df
 
 # ----------------------------- Wrangling DFs on the basis of atlas structures -----------------------------------------
 
-def writeStructDFs(df, structName_list, filename, IDheader='id', exclude=None):
-    oapi = OntologiesApi()
+def write_struct_d_fs(df, struct_name_list, filename, IDheader='id', exclude=None):
+    oapi = ontologies_api()
     # The 1 refers to the adult mouse brain atlas
     structure_graph = oapi.get_structures_with_sets([1])
     # clean_structures() removes unused fields
-    structure_graph = StructureTree.clean_structures(structure_graph)
+    structure_graph = structure_tree.clean_structures(structure_graph)
     # a class with methods for aceessing and using ontologies data
-    tree = StructureTree(structure_graph)
-    for structName in structName_list:
-        towrite = getStructDF(df, structName, tree, IDheader=IDheader, exclude=exclude)
-        writename = structName + filename
+    tree = structure_tree(structure_graph)
+    for struct_name in struct_name_list:
+        towrite = get_struct_df(df, struct_name, tree, IDheader=IDheader, exclude=exclude)
+        writename = struct_name + filename
         towrite.to_csv(writename, sep='\t')
 
-def getStructDF(df, structName, tree, IDheader='id', exclude=None):  # use with np.s_[:]
+def get_struct_df(df, struct_name, tree, IDheader='id', exclude=None):  # use with np.s_[:]
     """
-    FUNCTION: obtain decendents of a particular structure from a DataFrame
+    FUNCTION: obtain decendents of a particular structure from a data_frame
     ARGUMENTS:
-        df = data (pandas.DataFrame)
-        structName = name of the parent structure for which data should be obtained (str)
-        tree = instance of StructureTree (allensdk.core.structure_tree.StructureTree())
+        df = data (pandas.data_frame)
+        struct_name = name of the parent structure for which data should be obtained (str)
+        tree = instance of structure_tree (allensdk.core.structure_tree.structure_tree())
         IDheader = header of the id column (str)
         exclude = ids to exclude. id col is treated as list and spliced using np.s_[...] (np.s_[:])
-    DEPENDENCIES: (1) getSubStrids(..); (2) dropBool(...)
+    DEPENDENCIES: (1) get_sub_strids(..); (2) drop_bool(...)
         1) obtain list of structures that decend from a given parent structure from a list of structures (function)
-        2) removes specified bool from DataFrame when supplied list of bool of len(df) (function)
-    RETURNS: DataFrame
+        2) removes specified bool from data_frame when supplied list of bool of len(df) (function)
+    RETURNS: data_frame
     """
-    structDict = tree.get_structures_by_name([structName])
-    strid = structDict[0]['id']
+    struct_dict = tree.get_structures_by_name([struct_name])
+    strid = struct_dict[0]['id']
 
     strids = df[IDheader]
     if exclude is not None:
         strids = strids[exclude]
-    strid_list = getSubStrids(strids, strid, verbose=False)
+    strid_list = get_sub_strids(strids, strid, verbose=False)
     bools = []
     for ID in strids:
         if ID in strid_list:
@@ -119,60 +119,60 @@ def getStructDF(df, structName, tree, IDheader='id', exclude=None):  # use with 
 
 # ------------------------------------ Adding Structure tree info to DF ------------------------------------------------
 
-def addFromStructureTree(df, useCol, toAdd, toUse, tree):
+def add_from_structure_tree(df, use_col, to_add, to_use, tree):
     """
      write a docstring. I mean it.
     """
-    if toAdd == toUse:
-        message = 'The toAdd ({}) argument cannot be the same as the toUse argument({})'.format(toAdd, toUse)
+    if to_add == to_use:
+        message = 'The to_add ({}) argument cannot be the same as the to_use argument({})'.format(to_add, to_use)
         print('''Please choose the type of column to add (acronym, id, name, ...) \n 
-            and the name (useCol) and type of column containing (acronym, id, or name) \n 
+            and the name (use_col) and type of column containing (acronym, id, or name) \n 
             the information with which to query the tree''')
-        raise ValueError(message)
-    header = 'structure_' + toAdd
-    if toUse == 'id':
-        out = addCol_id(df, useCol, toAdd, toUse, tree, header, loc=0)
-    if toUse == 'name':
-        out = addCol_name(df, useCol, toAdd, toUse, tree, header, loc=0)
-    if toUse == 'acronym':
-        out = addCol_acronym(df, useCol, toAdd, toUse, tree, header, loc=0)
+        raise value_error(message)
+    header = 'structure_' + to_add
+    if to_use == 'id':
+        out = add_col_id(df, use_col, to_add, to_use, tree, header, loc=0)
+    if to_use == 'name':
+        out = add_col_name(df, use_col, to_add, to_use, tree, header, loc=0)
+    if to_use == 'acronym':
+        out = add_col_acronym(df, use_col, to_add, to_use, tree, header, loc=0)
     return out
 
-def addCol_id(df, idCol, toAdd, toUse, tree, header, loc=0):
+def add_col_id(df, id_col, to_add, to_use, tree, header, loc=0):
     additions = []
-    for ID in df[idCol]:
+    for ID in df[id_col]:
         try:
-            structDict = tree.get_structures_by_id([ID])[0]
-            addition = structDict[toAdd]
-        except KeyError:
+            struct_dict = tree.get_structures_by_id([ID])[0]
+            addition = struct_dict[to_add]
+        except key_error:
             addition = None
         additions.append(addition)
     df.insert(loc, header, additions)
     return df
 
-def addCol_acronym(df, acronymCol, toAdd, toUse, tree, header, loc=0):
+def add_col_acronym(df, acronym_col, to_add, to_use, tree, header, loc=0):
     additions = []
-    for acronym in df[acronymCol]:
+    for acronym in df[acronym_col]:
         try:
-            structDict = tree.get_structures_by_acronym([acronym])[0]
-            addition = structDict[toAdd]
-        except KeyError:
+            struct_dict = tree.get_structures_by_acronym([acronym])[0]
+            addition = struct_dict[to_add]
+        except key_error:
             addition = None
         additions.append(addition)
     df.insert(loc, header, additions)
     return df
 
-def addCol_name(df, nameCol, toAdd, toUse, tree, header, loc=0):
+def add_col_name(df, name_col, to_add, to_use, tree, header, loc=0):
     additions = []
-    for name in df[nameCol]:
+    for name in df[name_col]:
         try:
-            structName = getSearchWord(name, structs_all, sep=r', ')
+            struct_name = get_search_word(name, structs_all, sep=r', ')
         except:
             addition = None
         try:
-            structDict = tree.get_structures_by_name([structName])[0]
-            addition = structDict[toAdd]
-        except KeyError:
+            struct_dict = tree.get_structures_by_name([struct_name])[0]
+            addition = struct_dict[to_add]
+        except key_error:
             addition = None
 
         additions.append(addition)
@@ -180,26 +180,26 @@ def addCol_name(df, nameCol, toAdd, toUse, tree, header, loc=0):
     df.insert(loc, header, additions)
     return df
 
-def dropParents(df, tree, IDheader='structure_id'):
+def drop_parents(df, tree, IDheader='structure_id'):
     """
      FUNCTION: remove any partent structures from a dataframe using the structure_id column.
-         is dependent on the dropBool() function.
+         is dependent on the drop_bool() function.
      ARGS:
-         df : data to clean (pandas.DataFrame)
-         tree : instance of StructureTree (allensdk.core.structure_tree.StructureTree())
+         df : data to clean (pandas.data_frame)
+         tree : instance of structure_tree (allensdk.core.structure_tree.structure_tree())
          IDheader : header of the id column (str)
-     DEPENDENCIES: (1) dropBool(...)
-         1) removes specified bool from DataFrame when supplied list of bool of len(df) (function)
-     RETURNS: copy df without the parent structures (pandas.DataFrame)
+     DEPENDENCIES: (1) drop_bool(...)
+         1) removes specified bool from data_frame when supplied list of bool of len(df) (function)
+     RETURNS: copy df without the parent structures (pandas.data_frame)
      """
     parents = []
-    uniqueElem = np.unique([strid for strid in df[IDheader]])
-    print('there are {} unique IDs in the data frame'.format(len(uniqueElem)))
+    unique_elem = np.unique([strid for strid in df[IDheader]])
+    print('there are {} unique IDs in the data frame'.format(len(unique_elem)))
 
-    for strid_a in uniqueElem:
+    for strid_a in unique_elem:
         values = []
         matches = []
-        for strid_b in uniqueElem:
+        for strid_b in unique_elem:
             if strid_a != strid_b:
                 parent = tree.structure_descends_from(strid_b, strid_a)
                 values.append(parent)
@@ -211,28 +211,28 @@ def dropParents(df, tree, IDheader='structure_id'):
         a = True in values
         if a:
             parents.append(strid_a)
-    parentBool = []
+    parent_bool = []
     for strid in df[IDheader]:
         b = strid in parents
-        parentBool.append(b)
-    out = dropBool(df, parentBool, todrop=True)
+        parent_bool.append(b)
+    out = drop_bool(df, parent_bool, todrop=True)
 
 
-def saveStructFiles(df, prefix, structName='Isocortex', regex='[A-Z]*[a-z]*\d.*',
-                    reNames=['sanslayers', 'layers'], IDheader='structure_id',
-                    tree=tree, acronymHeader='structure_acronym', exclude=None):
-    name = prefix + '_' + structName
+def save_struct_files(df, prefix, struct_name='Isocortex', regex='[A-Z]*[a-z]*\d.*',
+                    re_names=['sanslayers', 'layers'], IDheader='structure_id',
+                    tree=tree, acronym_header='structure_acronym', exclude=None):
+    name = prefix + '_' + struct_name
     name0 = name + '.csv'
-    struct = getStructDF(df, structName, tree, IDheader=IDheader)
+    struct = get_struct_df(df, struct_name, tree, IDheader=IDheader)
     struct.to_csv(name0)
     if regex != None:
-        name1 = name + '_' + reNames[0]
-        name2 = name + '_' + reNames[1]
-        struct_sre = drop_reRows(struct, acronymHeader, regex='[A-Z]*[a-z]*\d.*', remove=True)
-        struct_sre = dropParents(struct_sre, tree, IDheader=IDheader)
+        name1 = name + '_' + re_names[0]
+        name2 = name + '_' + re_names[1]
+        struct_sre = drop_re_rows(struct, acronym_header, regex='[A-Z]*[a-z]*\d.*', remove=True)
+        struct_sre = drop_parents(struct_sre, tree, IDheader=IDheader)
         struct_sre.to_csv(name1)
-        struct_wre = drop_reRows(struct, acronymHeader, regex='[A-Z]*[a-z]*\d.*', remove=False)
-        struct_wre = dropParents(struct_wre, tree, IDheader=IDheader)
+        struct_wre = drop_re_rows(struct, acronym_header, regex='[A-Z]*[a-z]*\d.*', remove=False)
+        struct_wre = drop_parents(struct_wre, tree, IDheader=IDheader)
         struct_wre.to_csv(name2)
         return struct_sre, struct_wre
     else:
@@ -240,18 +240,18 @@ def saveStructFiles(df, prefix, structName='Isocortex', regex='[A-Z]*[a-z]*\d.*'
 
 # ------------------------------------ Adding acronym-associated info to DF --------------------------------------------
 
-def addICtxGroups(df, ac_header='structure_acronym',
-                  addParent_colNames=('ctx_subregion', 'ctx_region'), writeOut=None):
+def add_i_ctx_groups(df, ac_header='structure_acronym',
+                  add_parent_col_names=('ctx_subregion', 'ctx_region'), write_out=None):
     groups = []
     for ac in df[ac_header]:
         ac = Acronym(ac)
         groups.append(ac.group)
     df['group'] = groups
-    if addParent_colNames is not None:
-        add_reColumn(df, ac_header, '[A-Z]*[a-z]*', addParent_colNames[0], loc=0)
-        add_reColumn(df, ac_header, '[A-Z]*', addParent_colNames[1], loc=0)
-    if writeOut != None:
-        df.to_csv(writeOut, sep='\t')
+    if add_parent_col_names is not None:
+        add_re_column(df, ac_header, '[A-Z]*[a-z]*', add_parent_col_names[0], loc=0)
+        add_re_column(df, ac_header, '[A-Z]*', add_parent_col_names[1], loc=0)
+    if write_out != None:
+        df.to_csv(write_out, sep='\t')
     return df
 
 class Acronym:
@@ -262,10 +262,10 @@ class Acronym:
             string: acronym of choice
         """
         self.string = string
-        self.group = self.getGroup()
-        # self.otherInfo?
+        self.group = self.get_group()
+        # self.other_info?
 
-    def getGroup(self):
+    def get_group(self):
         ac = self.string
         somatomotor = ['MOp', 'SS']
         medial = ['PTLp', 'VISam', 'VISpm', 'RSP']
@@ -273,65 +273,65 @@ class Acronym:
         visual = ['VISal', 'VISl', 'VISp', 'VISpl']
         anterolateral = ['VISC', 'GU', 'AI']
         prefrontal = ['MOs', 'FRP', 'ACA', 'ORB', 'PL', 'ILA']
-        groupDefs = {'somatomotor': somatomotor, 'medial': medial, 'temporal': temporal,
+        group_defs = {'somatomotor': somatomotor, 'medial': medial, 'temporal': temporal,
                      'anterolateral': anterolateral, 'prefrontal': prefrontal, 'visual': visual}
         group = 'undefined'
-        for key in groupDefs.keys():
-            inGroup = False
-            for value in groupDefs[key]:
+        for key in group_defs.keys():
+            in_group = False
+            for value in group_defs[key]:
                 if ac.find(value) != -1:
-                    inGroup = True
-            if inGroup:
+                    in_group = True
+            if in_group:
                 group = key
         return group
 
 # ------------------------------------------- Regex-based DF wrangling  ------------------------------------------------
 
-def add_reColumn(df, strColHeader, regex, reColHeader, loc=0):
+def add_re_column(df, str_col_header, regex, re_col_header, loc=0):
     out = df
     pattern = re.compile(regex)
-    reColumn = []
-    for string in out[strColHeader]:
-        matchObj = pattern.match(string)
-        reColumn.append(matchObj[0])
-    out.insert(loc, reColHeader, reColumn)
+    re_column = []
+    for string in out[str_col_header]:
+        match_obj = pattern.match(string)
+        re_column.append(match_obj[0])
+    out.insert(loc, re_col_header, re_column)
     return out
 
-def add_reColumn_exc(df, strColHeader, regex, reColHeader, loc=0, exc=['4', '5', '6']):
+def add_re_column_exc(df, str_col_header, regex, re_col_header, loc=0, exc=['4', '5', '6']):
     out = df
     pattern = re.compile(regex)
-    reColumn = []
-    for string in out[strColHeader]:
-        matchObj = pattern.match(string)
+    re_column = []
+    for string in out[str_col_header]:
+        match_obj = pattern.match(string)
         exclude = False
         for cond in exc:
             if cond in string:
                 exclude = True
         if not exclude:
-            reColumn.append(matchObj[0])
+            re_column.append(match_obj[0])
         if exclude:
-            reColumn.append('NA')
-    out.insert(loc, reColHeader, reColumn)
+            re_column.append('NA')
+    out.insert(loc, re_col_header, re_column)
     return out
 
-def drop_reRows(df, strColHeader, regex='[A-Z]*[a-z]*\d.*', remove=True):
+def drop_re_rows(df, str_col_header, regex='[A-Z]*[a-z]*\d.*', remove=True):
     """
     When applied to acronyms, this function will remove all acronyms that
     belong to a cortical layer. Invert to keep only layers (technically with # in acronym)
     """
     matches = []
     pattern = re.compile(regex)
-    for string in df[strColHeader]:
+    for string in df[str_col_header]:
         match = pattern.findall(string)
         if len(match) > 0:
             matches.append(True)
         if len(match) == 0:
             matches.append(False)
 
-    out = dropBool(df, matches, todrop=remove)
+    out = drop_bool(df, matches, todrop=remove)
     return out
 
-def addLayer(df, acronymHeader):
+def add_layer(df, acronym_header):
     out = df.copy()
     regex = '[A-Z]*.*[a-z]*\d.*'
     pattern = re.compile(regex)
@@ -339,12 +339,12 @@ def addLayer(df, acronymHeader):
     digit = re.compile(d)
 
     layers = []
-    for string in df[acronymHeader]:
+    for string in df[acronym_header]:
         try:
             match = pattern.match(string)[0]
             layer = digit.findall(match)[0]
             layers.append(layer)
-        except TypeError:
+        except type_error:
             print('A layer could not be identified in {}'.format(string))
             layers.append('NA')
     out['cortical_layer'] = layers
@@ -352,17 +352,17 @@ def addLayer(df, acronymHeader):
 
 # --------------------------------------------- Statistical wrangling --------------------------------------------------
 
-def meansSEMsSort(df, savename=None, groupby='structure_acronym'):
+def means_se_ms_sort(df, savename=None, groupby='structure_acronym'):
     """
     FUNCTION: Obtain a data frame containing means and standard errors for groups (e.g., anatomical structures)
     ARGUMENTS:
-        df: pd.DataFrame or dictionary with save names as keys and dfs as values
+        df: pd.data_frame or dictionary with save names as keys and dfs as values
         savename: if a df is supplied, name with which to save output
         groupby: column header of categorical variable for which to compute means
     DEPENDENCIES: Packages/modules/etc: pandas as pd
-    Native: (1) amalgamateDFs(df_dict)
+    Native: (1) amalgamate_d_fs(df_dict)
     1) joins two data frames with corresponding rows
-    RETURNS: pd.DataFrame
+    RETURNS: pd.data_frame
     """
     if type(df) == dict:
         df_dict = df
@@ -379,7 +379,7 @@ def meansSEMsSort(df, savename=None, groupby='structure_acronym'):
             sems.to_csv(name)
             sems = pd.read_csv(name)
             sems = sems.drop([groupby], axis=1)
-            result = amalgamateDFs({'mean': means, 'sem': sems})
+            result = amalgamate_d_fs({'mean': means, 'sem': sems})
             result.sort_values(groupby)
             result.to_csv(name)
             out[keys[i]] = result
@@ -391,7 +391,7 @@ def meansSEMsSort(df, savename=None, groupby='structure_acronym'):
         sems.to_csv(savename)
         sems = pd.read_csv(savename)
         sems = sems.drop([groupby], axis=1)
-        out = amalgamateDFs({'mean': means, 'sem': sems})
+        out = amalgamate_d_fs({'mean': means, 'sem': sems})
         out.sort_values(groupby)
         out.to_csv(savename)
         print('You can supply a dictionary of save_name: df pairs to expedite bulk processing')
@@ -399,24 +399,24 @@ def meansSEMsSort(df, savename=None, groupby='structure_acronym'):
 
 # ----------------------------------------- Row matching & column addition ---------------------------------------------
 
-def matchAndAmalgamate(df0, df1, prefixes, groups=('structure_acronym', 'structure_acronym')):
-    df0, df1 = matchRows(df0, df1, groups=groups)
-    df = amalgamateDFs({prefixes[0]: df0, prefixes[1]: df1})
+def match_and_amalgamate(df0, df1, prefixes, groups=('structure_acronym', 'structure_acronym')):
+    df0, df1 = match_rows(df0, df1, groups=groups)
+    df = amalgamate_d_fs({prefixes[0]: df0, prefixes[1]: df1})
     return df
 
-def matchRows(df0_, df1_, groups=('structure_acronym', 'structure_acronym')):
+def match_rows(df0_, df1_, groups=('structure_acronym', 'structure_acronym')):
     """
     FUNCTION: Checks if two data frames contain identical rows on the basis of categories/IDs (i.e., groups).
         If not, unnecessary rows are recursively removed from longer data frame.
         Checks that rows are in correct sequence.
             NB: for DFs of means use 'structure_acronym' else create col of unique concatenated strings
-            (strid_structSetID) - but this is a less likely scenario
+            (strid_struct_set_id) - but this is a less likely scenario
     ARGUMENTS:
-        df0_ = pd.DataFrame
-        df1_ = pd.DataFrame
+        df0_ = pd.data_frame
+        df1_ = pd.data_frame
         groups = columns containing the categories or IDs that must match
     DEPENDENCIES: Packages/modules/etc: numpy as np, pandas as pd
-    RETURNS: pd.DataFrame, pd.DataFrame
+    RETURNS: pd.data_frame, pd.data_frame
     """
     df0 = df0_.copy().sort_values(groups[0])
     df1 = df1_.copy().sort_values(groups[1])
@@ -429,20 +429,20 @@ def matchRows(df0_, df1_, groups=('structure_acronym', 'structure_acronym')):
             for i in range(len(vals_0)):
                 try:
                     assert vals_0[i] == vals_1[i]
-                except AssertionError:
+                except assertion_error:
                     errors += 1
                     print('{} does not match {}'.format(df0[groups[0]][i], df1[groups[1]][i]))
             message = 'there were {} mismatches'.format(errors)
             if errors > 0:
-                raise AssertionError(message)
+                raise assertion_error(message)
             else:
                 return df_dict[True]['df'], df_dict[False]['df']
     else:
-        zeroLonger = len(set(df0[groups[0]])) >= len(set(df1[groups[1]]))
-        zeroShorter = not zeroLonger
-        bools = [ac in set(df_dict[zeroShorter]['df'][groups[df_dict[zeroShorter]['index']]])
-                 for ac in df_dict[zeroLonger]['df'][groups[df_dict[zeroLonger]['index']]]]
-        df_dict[zeroLonger]['df'] = dropBool(df_dict[zeroLonger]['df'], bools, todrop=False)
+        zero_longer = len(set(df0[groups[0]])) >= len(set(df1[groups[1]]))
+        zero_shorter = not zero_longer
+        bools = [ac in set(df_dict[zero_shorter]['df'][groups[df_dict[zero_shorter]['index']]])
+                 for ac in df_dict[zero_longer]['df'][groups[df_dict[zero_longer]['index']]]]
+        df_dict[zero_longer]['df'] = drop_bool(df_dict[zero_longer]['df'], bools, todrop=False)
         number = 0
         rows = []
         for i in range(len(bools)):
@@ -450,12 +450,12 @@ def matchRows(df0_, df1_, groups=('structure_acronym', 'structure_acronym')):
             if not b:
                 number += 1
                 rows.append(i)
-        print('{} rows were removed from df {}'.format(number, df_dict[zeroLonger]['index']))
+        print('{} rows were removed from df {}'.format(number, df_dict[zero_longer]['index']))
         print('The rows removed were: {}'.format(rows))
         df0, df1 = df_dict[True]['df'], df_dict[False]['df']
-        return matchRows(df0, df1, groups)
+        return match_rows(df0, df1, groups)
 
-def amalgamateDFs(df_dict):
+def amalgamate_d_fs(df_dict):
     for key in df_dict.keys():
         col_names = list(df_dict[key].columns)
         new_names = []
@@ -468,54 +468,54 @@ def amalgamateDFs(df_dict):
 
 # ----------------------------------------------- Basic functions ------------------------------------------------------
 
-def writeAllStructures(tree):
-    nameMap = tree.get_name_map()
-    structures = [nameMap[i] for i in tree.descendant_ids([997])[0]]
+def write_all_structures(tree):
+    name_map = tree.get_name_map()
+    structures = [name_map[i] for i in tree.descendant_ids([997])[0]]
     return structures
 
-def writeAllCorticalStructures(tree):
+def write_all_cortical_structures(tree):
     """B fulcher allensdk repo"""
-    nameMap = tree.get_name_map()
-    cortexStructures = [name_map[i] for i in tree.descendant_ids([315])[0]]
-    return cortexStructures
+    name_map = tree.get_name_map()
+    cortex_structures = [name_map[i] for i in tree.descendant_ids([315])[0]]
+    return cortex_structures
 
-def writeSubStructures(structName, tree, filename):
-    structDict = tree.get_structures_by_name([structName])
-    strid = structDict[0]['id']
-    nameMap = tree.get_name_map()
+def write_sub_structures(struct_name, tree, filename):
+    struct_dict = tree.get_structures_by_name([struct_name])
+    strid = struct_dict[0]['id']
+    name_map = tree.get_name_map()
     structures = [name_map[i] for i in tree.descendant_ids([strid])[0]]
     ids = [i for i in tree.descendant_ids([strid])[0]]
-    df = pd.DataFrame()
+    df = pd.data_frame()
     df['structure_name'] = structures
     df['structure_id'] = ids
     df.to_csv(filename, sep='\t')
     return df
 
-def multiSubStids(queryStructs, tree):
+def multi_sub_stids(query_structs, tree):
     query_stids = []
-    for struct in queryStructs:
-        strids = subStructures_id(struct, tree)
+    for struct in query_structs:
+        strids = sub_structures_id(struct, tree)
         for strid in strids:
             query_stids.append(strid)
     return query_stids
 
-def subStructures_id(structName, tree):
-    structDict = tree.get_structures_by_name([structName])
-    strid = structDict[0]['id']
+def sub_structures_id(struct_name, tree):
+    struct_dict = tree.get_structures_by_name([struct_name])
+    strid = struct_dict[0]['id']
     ids = [i for i in tree.descendant_ids([strid])[0]]
     return ids
 
-def getMsTree():
-    oapi = OntologiesApi()
+def get_ms_tree():
+    oapi = ontologies_api()
     # The 1 refers to the adult mouse brain atlas
     structure_graph = oapi.get_structures_with_sets([1])
     # clean_structures() removes unused fields
-    structure_graph = StructureTree.clean_structures(structure_graph)
+    structure_graph = structure_tree.clean_structures(structure_graph)
     # a class with methods for aceessing and using ontologies data
-    tree = StructureTree(structure_graph)
+    tree = structure_tree(structure_graph)
     return tree
 
-def getSubStrids(strids, strid, verbose=False):
+def get_sub_strids(strids, strid, verbose=False):
     out = []
     for strida in strids:
         if verbose == True:
@@ -525,41 +525,41 @@ def getSubStrids(strids, strid, verbose=False):
             out.append(strida)
     return out
 
-def removeRows(df, rm_list, rm_header):
-    toDrop = []
+def remove_rows(df, rm_list, rm_header):
+    to_drop = []
     for i in range(len(df[rm_header])):
         val = df[rm_header][i]
         if val in rm_list:
-            toDrop.append(i)
-    df = df.drop(toDrop)
+            to_drop.append(i)
+    df = df.drop(to_drop)
     return df
 
-def getSearchWord(string, toSearch, sep=r', '):
+def get_search_word(string, to_search, sep=r', '):
     """
     The Ero et al., 2018, Front. Neuroinfo. data has no commas in structure names and this
     returns an acceptable search-term when fed a list of Allen Atlas structure names
     """
     arr = []
-    for op in toSearch:
-        searchList = re.split(sep, op)
-        successCount = 0
-        for item in searchList:
+    for op in to_search:
+        search_list = re.split(sep, op)
+        success_count = 0
+        for item in search_list:
             if item in string:
-                successCount += 1
-        arr.append(successCount)
+                success_count += 1
+        arr.append(success_count)
     arr = np.array(arr)
     i = np.argmax(arr)
-    return toSearch[i]
+    return to_search[i]
 
-def rowMatches(df, toMatch, matchCol, todrop=False):
-    matchBool = []
-    for elem in df[matchCol]:
-        b = elem in toMatch
-        matchBool.append(b)
-    out = dropBool(df, matchBool, todrop=todrop)
+def row_matches(df, to_match, match_col, todrop=False):
+    match_bool = []
+    for elem in df[match_col]:
+        b = elem in to_match
+        match_bool.append(b)
+    out = drop_bool(df, match_bool, todrop=todrop)
     return out
 
-def dropBool(df, bools, todrop=False):
+def drop_bool(df, bools, todrop=False):
     out = df.copy()
     out['bools'] = bools
     out = out[out['bools'] != todrop]
@@ -569,7 +569,7 @@ def dropBool(df, bools, todrop=False):
 
 # ------------------------------------------------- Deprecated? --------------------------------------------------------
 
-def addAcronymCol_name(df, namesCol, tree, header='acronym', loc=0):
+def add_acronym_col_name(df, names_col, tree, header='acronym', loc=0):
     """
     this was specifically designed for the ero et al., 2018 data set, in which ','s were removed
     from the names of regions. This means that the names cannot be used to directly query the
@@ -581,59 +581,59 @@ def addAcronymCol_name(df, namesCol, tree, header='acronym', loc=0):
     Please enjoy:
     """
     acronyms = []
-    structs_all = writeAllStructures(tree)
-    for name in df[namesCol]:
+    structs_all = write_all_structures(tree)
+    for name in df[names_col]:
         try:
-            structName = getSearchWord(name, structs_all, sep=r', ')
+            struct_name = get_search_word(name, structs_all, sep=r', ')
         except:
             acronym = None
         try:
-            structDict = tree.get_structures_by_name([structName])[0]
-        except KeyError:
+            struct_dict = tree.get_structures_by_name([struct_name])[0]
+        except key_error:
             acronym = None
-        acronym = structDict['acronym']
+        acronym = struct_dict['acronym']
         acronyms.append(acronym)
 
     df.insert(loc, header, acronyms)
     return df
 
-def addAcronymCol_id(df, idCol, tree, header='structure_acronym', loc=0):
+def add_acronym_col_id(df, id_col, tree, header='structure_acronym', loc=0):
     acronyms = []
-    for ID in df[idCol]:
+    for ID in df[id_col]:
         try:
-            structDict = tree.get_structures_by_id([ID])[0]
-        except KeyError:
+            struct_dict = tree.get_structures_by_id([ID])[0]
+        except key_error:
             acronym = None
-        acronym = structDict['acronym']
+        acronym = struct_dict['acronym']
         acronyms.append(acronym)
 
     df.insert(loc, header, acronyms)
     return df
 
-def addIDCol_acronym(df, acronymCol, tree, header='structure_id', loc=0):
+def add_id_col_acronym(df, acronym_col, tree, header='structure_id', loc=0):
     IDs = []
-    for acronym in df[acronymCol]:
+    for acronym in df[acronym_col]:
         try:
-            structDict = tree.get_structures_by_acronym([acronym])[0]
-        except KeyError:
+            struct_dict = tree.get_structures_by_acronym([acronym])[0]
+        except key_error:
             ID = None
-        ID = structDict['id']
+        ID = struct_dict['id']
         IDs.append(ID)
 
     df.insert(loc, header, IDs)
     return df
 
-def addIDCol_name(df, nameCol, tree, header='structure_id', loc=0):
+def add_id_col_name(df, name_col, tree, header='structure_id', loc=0):
     IDs = []
-    for name in df[nameCol]:
+    for name in df[name_col]:
         try:
-            structName = getSearchWord(name, structs_all, sep=r', ')
+            struct_name = get_search_word(name, structs_all, sep=r', ')
         except:
             ID = None
         try:
-            structDict = tree.get_structures_by_name([structName])[0]
-            ID = structDict['id']
-        except KeyError:
+            struct_dict = tree.get_structures_by_name([struct_name])[0]
+            ID = struct_dict['id']
+        except key_error:
             ID = None
 
         IDs.append(ID)
@@ -641,13 +641,13 @@ def addIDCol_name(df, nameCol, tree, header='structure_id', loc=0):
     df.insert(loc, header, IDs)
     return df
 
-def addNameCol_acronym(df, acronymCol, tree, header='structure_name', loc=0):
+def add_name_col_acronym(df, acronym_col, tree, header='structure_name', loc=0):
     names = []
-    for acronym in df[acronymCol]:
+    for acronym in df[acronym_col]:
         try:
-            structDict = tree.get_structures_by_acronym([acronym])[0]
-            name = structDict['id']
-        except KeyError:
+            struct_dict = tree.get_structures_by_acronym([acronym])[0]
+            name = struct_dict['id']
+        except key_error:
             name = None
 
         names.append(name)
@@ -655,13 +655,13 @@ def addNameCol_acronym(df, acronymCol, tree, header='structure_name', loc=0):
     df.insert(loc, header, names)
     return df
 
-def addNameCol_id(df, idCol, tree, header='structure_name', loc=0):
+def add_name_col_id(df, id_col, tree, header='structure_name', loc=0):
     names = []
-    for ID in df[idCol]:
+    for ID in df[id_col]:
         try:
-            structDict = tree.get_structures_by_id([ID])[0]
-            name = structDict['acronym']
-        except KeyError:
+            struct_dict = tree.get_structures_by_id([ID])[0]
+            name = struct_dict['acronym']
+        except key_error:
             name = None
 
         names.append(name)
@@ -669,73 +669,73 @@ def addNameCol_id(df, idCol, tree, header='structure_name', loc=0):
     df.insert(loc, header, names)
     return df
 
-def getScatterPoints(df_x, df_y, reHeader_x, reHeader_y, meanHeader_x, meanHeader_y, xHeader, yHeader,
-                     saveName=None, outHeader='parent_acronym', regex='[A-Z]*[a-z]*'):
+def get_scatter_points(df_x, df_y, re_header_x, re_header_y, mean_header_x, mean_header_y, x_header, y_header,
+                     save_name=None, out_header='parent_acronym', regex='[A-Z]*[a-z]*'):
     '''
     FUNCTION: y is first obtained (i.e., measurment points) and equivalents from x are added to the dataframe
     '''
-    y = getAverage_re(df_y, reHeader_y, meanHeader_y, regex=regex, outHeader=outHeader)
-    x = getAverage_re(df_x, reHeader_x, meanHeader_x, regex=regex, outHeader=outHeader)
+    y = get_average_re(df_y, re_header_y, mean_header_y, regex=regex, out_header=out_header)
+    x = get_average_re(df_x, re_header_x, mean_header_x, regex=regex, out_header=out_header)
 
     xlist = []
     ylist = []
     parents = []
-    for j in range(len(y[outHeader])):
-        parent = y[outHeader][j]
-        for i in range(len(x[outHeader])):
-            if x[outHeader][i] == parent:
-                xlist.append(x[meanHeader_x][i])
-                ylist.append(y[meanHeader_y][j])
+    for j in range(len(y[out_header])):
+        parent = y[out_header][j]
+        for i in range(len(x[out_header])):
+            if x[out_header][i] == parent:
+                xlist.append(x[mean_header_x][i])
+                ylist.append(y[mean_header_y][j])
                 parents.append(parent)
 
-    out = pd.DataFrame()
-    out[outHeader] = parents
-    out[xHeader] = xlist
-    out[yHeader] = ylist
+    out = pd.data_frame()
+    out[out_header] = parents
+    out[x_header] = xlist
+    out[y_header] = ylist
 
-    if saveName is not None:
-        out.to_csv(saveName, sep='\t')
+    if save_name is not None:
+        out.to_csv(save_name, sep='\t')
     return out
 
 
-def getAverage_re(df, reHeader, meanHeader, regex='[A-Z]*[a-z]*', outHeader='parent_acronym'):
+def get_average_re(df, re_header, mean_header, regex='[A-Z]*[a-z]*', out_header='parent_acronym'):
     parent = []
     pattern = re.compile(regex)
-    for string in df[reHeader]:
-        matchObj = pattern.match(string)
-        parent.append(matchObj[0])
-    df[outHeader] = parent
-    means = df.groupby(outHeader)[meanHeader].mean()
-    out = pd.DataFrame()
+    for string in df[re_header]:
+        match_obj = pattern.match(string)
+        parent.append(match_obj[0])
+    df[out_header] = parent
+    means = df.groupby(out_header)[mean_header].mean()
+    out = pd.data_frame()
     parents0 = []
     for index in means.index:
         parents0.append(index)
 
-    out[outHeader] = parents0
-    out[meanHeader] = means.values
+    out[out_header] = parents0
+    out[mean_header] = means.values
     return out
 
-def writeStructDFsandMeans(df, structs, prefix, groupby='section_data_set_id'):
+def write_struct_d_fsand_means(df, structs, prefix, groupby='section_data_set_id'):
     started = False
     for struct in structs:
-        structDF = getStructDF(df, struct, tree, IDheader='structure_id')
-        saveName = prefix + '_' + struct + '.txt'
-        structDF.to_csv(saveName, sep='\t')
-        meanStruct = structDF.groupby([groupby]).mean()
-        saveName = prefix + '_' + struct + '_mean.txt'
-        meanStruct.to_csv(saveName, sep='\t')
-        meanStruct = pd.read_csv(saveName, sep='\t')
+        struct_df = get_struct_df(df, struct, tree, IDheader='structure_id')
+        save_name = prefix + '_' + struct + '.txt'
+        struct_df.to_csv(save_name, sep='\t')
+        mean_struct = struct_df.groupby([groupby]).mean()
+        save_name = prefix + '_' + struct + '_mean.txt'
+        mean_struct.to_csv(save_name, sep='\t')
+        mean_struct = pd.read_csv(save_name, sep='\t')
         names = []
-        for i in range(len(meanStruct[groupby])):
+        for i in range(len(mean_struct[groupby])):
             names.append(struct)
-        meanStruct['region'] = names
+        mean_struct['region'] = names
         if not started:
-            out = meanStruct
+            out = mean_struct
             started = True
         if started:
-            out = out.append(meanStruct)
-    saveName = prefix + '_structure_means.txt'
-    out.to_csv(saveName, sep='\t')
+            out = out.append(mean_struct)
+    save_name = prefix + '_structure_means.txt'
+    out.to_csv(save_name, sep='\t')
     return out
 
 
@@ -751,7 +751,7 @@ def get_image_addresses(path, age_id=None):
     :param age_id: age id (15 = P56) (int or None)
     :return: dictionary of image paths (dict)
 
-     e.g., image_address_dict = get_image_addresses('/Users/amcg0011/Data/InSituData', age_id=None)
+     e.g., image_address_dict = get_image_addresses('/Users/amcg0011/Data/in_situ_data', age_id=None)
     """ 
     gene_directories = get_gene_paths(path)
     image_address_dictionary = {}
