@@ -68,6 +68,34 @@ def find_expressing_pixels(image_rgb):
 
 
 def rgb_PCA(rgb_image, n_components=1, get_component=None):
+    """
+    Get a pca-based intensity image. Designed to be used to extract highest
+    shared variance components from RGB colour channels. PCA implemented
+    via scikit-learn.
+    E.g., extract a component corresponding to the dye colour in an in situ 
+    image (purple-blue colour comprised shared R~B variance)
+
+    Parameters
+    ----------
+    rgb_image: numpy.ndarray
+    n_components: int
+        number of components to include in the pca model
+    get_component: None or int or tupule of int or slice
+        The componets that should be retrived from the PCA. 
+        pca shape is (num-pixels, n_components)
+        get components chooses components --> pixel values 
+
+    Notes
+    -----
+    Have only tested when retriving one image. 
+    Quite slow.
+    References:
+    [1] Ross, L., 2016. The Image Processing Handbook, John C. Russ and 
+    F. Brent Neal. CRC Press, Boca Raton, FL, 2015, 1053 pp. 
+    ISBN: 978-1498740265.
+    [2] Neal, B. and Russ, J.C., 2004. Principal components analysis of 
+    multispectral image data. Microscopy Today, 12(5), pp.36-39.
+    """
     image_dims = rgb_image.shape
     flattened_image = rgb_image.reshape(-1, 3)
     pca = PCA(n_components=n_components)
