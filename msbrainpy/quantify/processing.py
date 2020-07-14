@@ -18,7 +18,7 @@ from skimage.feature import blob_log
 from skimage.draw import circle_perimeter
 from skimage.filters import median
 from tifffile import TiffWriter
-from msbrainpy.base import extra_list_nesting
+from msbrainpy.base import extraListNesting
 
 
 # ------------------------------------------ 2D In Situ Related Functions ----------------------------------------------
@@ -143,12 +143,12 @@ def white_balancing(image_rgb):
     return image
 
 
-# ---------------------------------------- Chain function_dict_list functions --------------------------------------------
+# ---------------------------------------- Chain functionDictList functions --------------------------------------------
 
-def nuclear_detection_list(selem=6, min_sigma=0.25, max_sigma=5, threshold=0.04,
-                         write_out=False, directory_path=None, name=None, cube_selem=True):
+def nuclearDetectionList(selem=6, min_sigma=0.25, max_sigma=5, threshold=0.04,
+                         writeOut=False, directoryPath=None, name=None, cube_selem=True):
     """
-    FUNCTION: write a list of function dictionaries (as per Chain; chain_method)
+    FUNCTION: write a list of function dictionaries (as per Chain; ChainMethod)
     ARGUMENTS:
         selem: structure element for morphological opening. If cube_selem, skimage.morphology.cube() will be applied to
             this arg. In this case, selem should be int.
@@ -158,16 +158,16 @@ def nuclear_detection_list(selem=6, min_sigma=0.25, max_sigma=5, threshold=0.04,
         max_sigma: standard deviation of the largest Gaussian kernel to be used in the scale-space representation
             in Laplacian of Gaussian blob detection (skimage.feature.blob_log()). Determines the largest blobs
             that can be detected.
-        threshold: lower threshold of lo_g local minima that will be detected as a blob. Determines the lowest intensity
+        threshold: lower threshold of LoG local minima that will be detected as a blob. Determines the lowest intensity
             of blob that can be detected
-        write_out: should images labeling blob coordinates be written out? (bool)
-        directory_path: if write_out, this is the directory to which the blob images will be saved.
-        name: if write_out, this name will be saved as part of the blob image file names. Will probably reflect the
-            parameters chosen. If write_out and name is None, this will be automatically defined.
+        writeOut: should images labeling blob coordinates be written out? (bool)
+        directoryPath: if writeOut, this is the directory to which the blob images will be saved.
+        name: if writeOut, this name will be saved as part of the blob image file names. Will probably reflect the
+            parameters chosen. If writeOut and name is None, this will be automatically defined.
         cube_selem: should skimage.morphology.cube() be applied to the inputted selem? (bool)
     DEPENDENCIES: numpy as np (when implemented in chain)
-    Native: (1)median_filter3_d()/skimage.filters.median(); (2)remove_background()/skimage.morphology.opening();
-        get_blobs__lo_g()/(3)skimage.feature.blob_log(); (4)write_blobs_img()/skimage.draw.circle_perimeter
+    Native: (1)medianFilter3D()/skimage.filters.median(); (2)removeBackground()/skimage.morphology.opening();
+        getBlobs_LoG()/(3)skimage.feature.blob_log(); (4)writeBlobsImg()/skimage.draw.circle_perimeter
         1) Median filter sequentially applied to x-y planes along z
         2) Applies morphological opening to generate a background image. This is subtracted from the original and the
             result is returned.
@@ -182,81 +182,81 @@ def nuclear_detection_list(selem=6, min_sigma=0.25, max_sigma=5, threshold=0.04,
     _selem = selem
     if cube_selem:
         selem = cube(selem)
-    med = {'function': median_filter3_d, 'suffix': 'MF', 'write_out': None}
-    rem_back = {'function': remove_background, 'suffix': 'sans_bk', 'write_out': None, 'args': [selem]}
-    if write_out:
+    med = {'function': medianFilter3D, 'suffix': 'MF', 'writeOut': None}
+    remBack = {'function': removeBackground, 'suffix': 'sansBk', 'writeOut': None, 'args': [selem]}
+    if writeOut:
         if name is None:
             name = 'o{}_min{}_max{}_thr{}'.format(_selem, min_sigma, max_sigma, threshold)
-        blobs = {'function': get_blobs__lo_g, 'suffix': 'blob_log',
+        blobs = {'function': getBlobs_LoG, 'suffix': 'blob_log',
                  'kwargs': {'min_sigma': min_sigma, 'max_sigma': max_sigma, 'threshold': threshold},
-                 'write_out': {'function': write_blobs_img, 'prior_link_kw': 'img', 'new_link_kw': 'blobs',
-                              'write_info_kw': 'file_', 'kwargs': {'out_dir': directory_path, 'name': name}}}
+                 'writeOut': {'function': writeBlobsImg, 'priorLink_kw': 'img', 'newLink_kw': 'blobs',
+                              'writeInfo_kw': 'file_', 'kwargs': {'outDir': directoryPath, 'name': name}}}
     else:
-        blobs = {'function': get_blobs__lo_g, 'suffix': 'blob_log',
+        blobs = {'function': getBlobs_LoG, 'suffix': 'blob_log',
                  'kwargs': {'min_sigma': min_sigma, 'max_sigma': max_sigma, 'threshold': threshold},
-                 'write_out': None}
-    func_list = [med, rem_back, blobs]
-    return func_list
+                 'writeOut': None}
+    funcList = [med, remBack, blobs]
+    return funcList
 
 
 # to be continued...
 
 # ---------------------------------------- Basic image processing functions --------------------------------------------
 
-def get_blobs__lo_g(img, min_sigma, max_sigma, threshold, *args, **kwargs):
+def getBlobs_LoG(img, min_sigma, max_sigma, threshold, *args, **kwargs):
     blobs = blob_log(img, min_sigma=min_sigma, max_sigma=max_sigma, threshold=threshold)
     print('{} blobs detected'.format(len(blobs)))
     return blobs
 
 
-def median_filter3_d(img):
+def medianFilter3D(img):
     im = img
     for i in range(im.shape[0]):
         im[i, :, :] = median(im[i, :, :])
     return im
 
 
-def remove_background(data, selem=cube(6), *args, **kwargs):
+def removeBackground(data, selem=cube(6), *args, **kwargs):
     img = data
     background = opening(img, selem=selem)
-    sans_background = img - background
-    return sans_background
+    sansBackground = img - background
+    return sansBackground
 
 
-# --------------------------------------------- write_out functions ----------------------------------------------------
+# --------------------------------------------- writeOut functions ----------------------------------------------------
 
-def write_blobs_img(img, blobs, file_, out_dir, name=None, dtype='auto', **kwargs):
+def writeBlobsImg(img, blobs, file_, outDir, name=None, dtype='auto', **kwargs):
     if dtype == 'auto':
         dtype = type(img[0, 0, 0])
-    cells_img = np.zeros(img.shape, dtype=dtype)
+    cellsImg = np.zeros(img.shape, dtype=dtype)
     for i in range(img.shape[0]):
         for j in range(len(blobs[:, 0])):
             if blobs[j, 0] == i:
                 r, c, rad = int(blobs[j, 1]), int(blobs[j, 2]), int(np.round(blobs[j, 3]))
                 rr, cc = circle_perimeter(r, c, rad)
                 try:
-                    cells_img[i, rr, cc] = 65535
-                except index_error:
-                    cells_img[i, r, c] = 65535
+                    cellsImg[i, rr, cc] = 65535
+                except IndexError:
+                    cellsImg[i, r, c] = 65535
     if name is None:
         name = ''
-    file_name = str(file_[:file_.find('.tif')]) + str(name) + '_blobs.tif'
-    file_path = os.path.join(out_dir, file_name)
-    with tiff_writer(file_path) as tif:
-        tif.save(cells_img)
-    print('{} blobs were identified in {}.\n_the locations of these were saved in {}'.format(len(blobs[:, 0]), file_,
-                                                                                            file_name))
-    return cells_img
+    fileName = str(file_[:file_.find('.tif')]) + str(name) + '_blobs.tif'
+    filePath = os.path.join(outDir, fileName)
+    with TiffWriter(filePath) as tif:
+        tif.save(cellsImg)
+    print('{} blobs were identified in {}.\nThe locations of these were saved in {}'.format(len(blobs[:, 0]), file_,
+                                                                                            fileName))
+    return cellsImg
 
 
-# -------------------------------------------- record_method functions --------------------------------------------------
+# -------------------------------------------- recordMethod functions --------------------------------------------------
 
-def img_file_count(blobs, file_, **kwargs):
+def imgFileCount(blobs, file_, **kwargs):
     count = len(blobs)
     return [count, file_]
 
 
-def correct_for_chunk(coords, chunk, save_dir, prefix, **kwargs):
+def correctForChunk(coords, chunk, saveDir, prefix, **kwargs):
     z_Pos = chunk['z_start']
     shape0 = chunk['z_end'] - z_Pos
     y_st = chunk['y_start']
@@ -267,54 +267,54 @@ def correct_for_chunk(coords, chunk, save_dir, prefix, **kwargs):
     x_lim = shape2 - edge
     y_lim = shape1 - edge
     z_lim = shape0 - edge
-    out_of_bounds = []
+    outOfBounds = []
     for i in range(len(coords[:, 0])):
         if coords[i, 0] > z_lim or coords[i, 1] > y_lim or coords[i, 2] > x_lim:
-            out_of_bounds.append(i)
+            outOfBounds.append(i)
         if z_start != 0:
             if coords[i, 0] < edge:
-                out_of_bounds.append(i)
+                outOfBounds.append(i)
         if y_st != 0:
             if coords[i, 1] < edge:
-                out_of_bounds.append(i)
+                outOfBounds.append(i)
         if x_st != 0:
             if coords[i, 2] < edge:
-                out_of_bounds.append(i)
-        coords[i, 0] = coords[i, 0] + z_pos
+                outOfBounds.append(i)
+        coords[i, 0] = coords[i, 0] + zPos
         coords[i, 1] = coords[i, 1] + y_st
         coords[i, 2] = coords[i, 2] + x_st
-    coords = np.delete(coords, out_of_bounds, 0)
+    coords = np.delete(coords, outOfBounds, 0)
     if len(coords) != 0:
-        save_name = prefix + "_coords_z{}-{}_substack{}".format(z_pos0, chunk['z_end'], chunk['stack_id'])
-        save_path = os.path.join(save_dir, save_name)
-        np.save(save_path, cells, allow_pickle=False)  # save files throughout as this can be a lengthy process.
+        saveName = prefix + "_coords_z{}-{}_substack{}".format(zPos0, chunk['z_end'], chunk['stackID'])
+        savePath = os.path.join(saveDir, saveName)
+        np.save(savePath, cells, allow_pickle=False)  # save files throughout as this can be a lengthy process.
         # what if the power disconnects and the computer turns off? Also, need to make sure there is a method for
         # starting part way through z.
-        return extra_list_nesting(coords)
+        return extraListNesting(coords)
     else:
         return None
 
 
-# ------------------------------------------- extract_method functions --------------------------------------------------
+# ------------------------------------------- extractMethod functions --------------------------------------------------
 
-def extract_img_file_counts(record, directory_path, prefix, record_name, **kwargs):
+def extractImgFileCounts(record, directoryPath, prefix, recordName, **kwargs):
     record = np.array(record)
-    df = pd.data_frame({record_name: record[:, 0], 'file': record[:, 1]})
-    new_name = prefix + '_' + record_name + '.csv'
-    new_path = os.path.join(directory_path, new_name)
-    df.to_csv(new_path)
+    df = pd.DataFrame({recordName: record[:, 0], 'file': record[:, 1]})
+    newName = prefix + '_' + recordName + '.csv'
+    newPath = os.path.join(directoryPath, newName)
+    df.to_csv(newPath)
     return df
 
 
-def extract_chunk_corrected(result, prefix, save_dir, subsection=None):
+def extractChunkCorrected(result, prefix, saveDir, subsection=None):
     result_concat = np.concatenate(result)
     if subsection is not None:
-        info = '_{}-x{}:{}-y{}:{}'.format(subsection['stack_id'], subsection['x_start'], subsection['x_end'],
+        info = '_{}-x{}:{}-y{}:{}'.format(subsection['stackID'], subsection['x_start'], subsection['x_end'],
                                                                      subsection['y_start'], subsection['y_end'])
     else:
         info = ''
     name = prefix + info + '_coords.txt'
-    out_path = os.path.join(save_dir, name)
-    np.savetxt(out_path, result_concat)
+    outPath = os.path.join(saveDir, name)
+    np.savetxt(outPath, result_concat)
     # could add to this. Subsequently remove smaller files perhaps?
     return result_concat
