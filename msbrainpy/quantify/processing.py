@@ -23,8 +23,34 @@ from msbrainpy.base import extraListNesting
 
 # ------------------------------------------ 2D In Situ Related Functions ----------------------------------------------
 
-def do_gene_series(directory, out_directory, image_name_pattern=r'image_id-\d*.jpeg', find_tissue_mask=False, 
-                   save_pc1=True):
+def do_gene_series(
+                   directory, 
+                   out_directory, 
+                   image_name_pattern=r'image_id-\d*.jpeg', 
+                   find_tissue_mask=True, 
+                   save_pc1=True
+     ):
+    """
+    Process all images in an ish series (i.e., one brain). 
+    
+
+    Parameters
+    ----------
+    directory: str
+        path to the series of images
+    out_directory: str
+        path to which to save the output
+    image_name_pattern: r string
+        pattern of images to process. Defaults to the naming convention used
+        when downloading images from the Allen Brain database 
+            see: msbrainpy.query.download_gene_images
+    find_tissue_mask: bool
+        Should a downsampled, contrast enhanced image + tissue mask be produced
+    save_pc1: bool
+        Shouls a pc1 signal image be produced. This image represents the 
+        RGB combination (~ in situ dye) associated with the greatest shared
+        varience in the data
+    """
     if not os.path.exists(out_directory):
         os.mkdir(out_directory)
     # find the files
@@ -46,25 +72,27 @@ def do_gene_series(directory, out_directory, image_name_pattern=r'image_id-\d*.j
             tissue_path = os.path.join(out_directory, tissue_name)
             io.imsave(mask_path, tissue_mask)
             io.imsave(tissue_path, greyscale)
-        segmented, pc1_image = find_expressing_pixels(white_balanced)
-        segmented_name = str(i) + '_segmentation.tif'
-        segmented_path = os.path.join(out_directory, segmented_name)
-        io.imsave(segmented_path, segmented)
         if save_pc1:
+            pc1_image = rgb_PCA(white_balanced)
             pc1_image = util.img_as_ubyte(pc1_image)
             pc1_image_name = str(i) + '_pc1_greyscale.tif'
             pc1_image_path = os.path.join(out_directory, pc1_image_name)
             io.imsave(pc1_image_path, pc1_image)
+        # add in segmentation function
 
 
-def find_expressing_pixels(image_rgb):
-    highest_var = rgb_PCA(image_rgb.copy())
-    median = filters.median(highest_var)
-    edge_enhanced = filters.sobel(median)
-    binary = edge_enhanced >= threshold_otsu(edge_enhanced)
-    binary = morphology.binary_closing(binary, morphology.disk(3))
-    binary = morphology.remove_small_holes(binary)
-    return binary, highest_var
+def ish_expressing_pixels(image):
+    """
+    function to segment expressing pixles from pre-processed in situ images
+    """
+    # this needs to be ~ equivalent to method used in allen brain institutes 
+    # neuroinformatics/anatomical gene expression pipeline
+    # Method must segment ~ cell sized objects and dense structures (e.g., 
+    # hippocampus, granular layer cerebellum, etc.)
+    # Can't be contrast based as this changes between images and could lead 
+    # to false detection in cellularly dense areas, which tend to pick up the
+    # dye without appreciable expression.
+    pass
 
 
 def rgb_PCA(rgb_image, n_components=1, get_component=None):
@@ -90,8 +118,8 @@ def rgb_PCA(rgb_image, n_components=1, get_component=None):
     Have only tested when retriving one image. 
     Quite slow.
     References:
-    [1] Ross, L., 2016. The Image Processing Handbook, John C. Russ and 
-    F. Brent Neal. CRC Press, Boca Raton, FL, 2015, 1053 pp. 
+    [1] The Image Processing Handbook, John C. Russ and F. Brent Neal. 
+    CRC Press, Boca Raton, FL, 2015, 1053 pp. <include pages>
     ISBN: 978-1498740265.
     [2] Neal, B. and Russ, J.C., 2004. Principal components analysis of 
     multispectral image data. Microscopy Today, 12(5), pp.36-39.
@@ -114,6 +142,9 @@ def rgb_PCA(rgb_image, n_components=1, get_component=None):
 
 # get masks for tissue location for a series of ISH images
 def find_gene_series_masks(directory, out_directory, image_name_pattern=r'image_id-\d*.jpeg'):
+    '''
+    Apply tissue_segmentation function to a gene series
+    '''
     if not os.path.exists(out_directory):
         os.mkdir(out_directory)
     # find the files
@@ -138,6 +169,27 @@ def find_gene_series_masks(directory, out_directory, image_name_pattern=r'image_
 
 # Tissue segmentation - this needs to be improved but seems to work for aligning a series into a volume (so far)
 def tissue_segmentation(image_rgb, disk_denominator=100, tissue_scale=0.125):
+    '''
+    Segement a tissue mask from a downsampled slice image
+
+    Parameters
+    ----------
+    image_rgb: np.ndarray
+        rgb in situ image (full size)
+    disk_denominator: int
+        used to choose the selm for binary closing morphological opperation
+        Used as a scaling factor for the disk
+        bigger >> smaller disk 
+        larger >> bigger disk
+    tissue_scale: rescaling factor for the image
+
+    Notes
+    -----
+    Needs some work. There are some holes in the masks where the tissue is 
+    not above background. Some of the circular artifacts are covered by the 
+    closing opperation. Perfectly sufficient for aligning images when building
+    a volume.
+    '''
     grey = rgb2grey(image_rgb.copy())
     grey = rescale(grey, tissue_scale)
     grey = exposure.equalize_hist(grey)
