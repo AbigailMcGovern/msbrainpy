@@ -1,0 +1,28 @@
+name: msbrainpy
+channels:
+  - conda-forge
+  - auto
+dependencies:
+  - python=3.7
+  - ipython=7.12
+  - jupyter
+  - toolz
+  - dask=2.11.0
+  - dask-labextension>=2.0.0
+  - distributed=2.11.0
+  - dask-ml
+  - bokeh>=2.0.0
+  - matplotlib
+  - numpy=1.18
+  - scikit-image=0.16
+  - scipy=1.4
+  - PIMS=0.4.1
+  - tifffile
+  - pynrrd
+  - h5py
+  - pandas>=1.0.1
+  - pip
+  - jinja2
+  - seaborn
+  - napari
+
