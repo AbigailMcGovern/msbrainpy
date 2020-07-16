@@ -19,8 +19,8 @@ def rmaStructUniQuery(structureList, geneIDs, graph_id=1, product_id=1,
     ARGUMENTS:
         structureList = list of structure ids for atlas structutre (list)
         geneIDs = entrez ids (int, list, or None)
-        graph_id = defalts to adult mouse: 1 (int)
-        product_id = defaults to 1 (int)
+        graph_id = defalts to adult mouse brain: 1 (int)
+        product_id = defaults to mouse: 1 (int)
         options = options for RmaApi().model_query() via rmaStructUniQuery() (string)
         include = include for RmaApi().model_query() via rmaStructUniQuery() (string)
         verbose = all I can think of is a text-based rpg
@@ -168,7 +168,7 @@ def section_image_query(data_set_id, verbose=True):
     response = requests.get(url)
     image_json = response.json()
     if verbose:
-        print('{} images matching the criteria were found'.format(image_json['num_rows']))
+        print(f'{image_json["num_rows"]} images matching the criteria were found')
     return image_json
 
 
@@ -178,7 +178,7 @@ def download_section_images(section_image_json, out_dir_name, check_img_exists=F
         os.mkdir(out_dir_name)
     for i in range(len(image_ids)):
         img = image_ids[i]
-        filename = 'image_id-' + str(img) + '.jpeg'
+        filename = f'image_id-{str(img)}.jpeg'
         filepath = os.path.join(out_dir_name, filename)
         if not check_img_exists or not os.path.exists(filepath):
             if i == return_img_n:
@@ -190,7 +190,7 @@ def download_section_images(section_image_json, out_dir_name, check_img_exists=F
 
 
 def download_image(image_id, filename, return_image=False):
-    url = 'http://api.brain-map.org/api/v2/image_download/{}'.format(image_id)
+    url = f'http://api.brain-map.org/api/v2/image_download/{image_id}'
     response = requests.get(url)
     with open(filename, 'wb') as file:
         file.write(response.content)
@@ -208,13 +208,13 @@ def get_gridded_data(entrez_id, directory_path=None, age_id=None, product_id=1, 
 
 def get_section_grid(section_id, out_dir):
     # this should obtain energy, intensity, and density but only obtains energy. Not sure why.
-    url = "http://api.brain-map.org/grid_data/download/{}include=energy,density,intensity".format(section_id)
+    url = f'http://api.brain-map.org/grid_data/download/{section_id}?include=energy,density,intensity'
     response = requests.get(url)
     filename = out_dir + '.zip'
     with open(filename, 'wb') as file:
         file.write(response.content)
-    with ZipFile(filename, 'r') as zipObj:
-        zipObj.extractall(out_dir)
+    with ZipFile(filename, 'r') as zip_obj:
+        zip_obj.extractall(out_dir
 
 
 # ----------------------------------------------- Find Data Sets -------------------------------------------------------
@@ -224,21 +224,17 @@ def download_from_section_data_set(func, entrez_id, directory_path=None, age_id=
     dirname = 'entrez_id_' + str(entrez_id) + '_' + section_data_set['msg'][0]['genes'][0]['acronym']
     if directory_path is not None:
         dirname = os.path.join(directory_path, dirname)
-
-    if not os.path.exists(dirname):
-        os.mkdir(dirname)
+    os.makedirs(dirname, exist_ok=True)
     plane_of_section_ids = [row['plane_of_section_id'] for row in section_data_set['msg']]
     for plane_of_section in list(set(plane_of_section_ids)):
         dirname_plane_of_section_id = 'plane_of_section-' + str(plane_of_section)
         dirname_plane_of_section_id = os.path.join(dirname, dirname_plane_of_section_id)
-        if not os.path.exists(dirname_plane_of_section_id):
-            os.mkdir(dirname_plane_of_section_id)
+        os.makedirs(dirname_plane_of_section_id, exist_ok=True)
         for row in section_data_set['msg']:
             if row['plane_of_section_id'] == plane_of_section:
                 if age_id is None or row['reference_space']['age_id'] == age_id:
                     dirname_section_id = 'age_id-' + str(row['reference_space']['age_id']) + '_id-' + str(row['id'])
-                    if os.path.exists(dirname_section_id):
-                        os.mkdir(dirname_section_id)
+                    os.makedirs(dirname_section_id, exist_ok=True)
                     out_dir = os.path.join(dirname_plane_of_section_id, dirname_section_id)
                     func(row['id'], out_dir)
 
@@ -280,20 +276,20 @@ def section_data_set_criteria(entrez_ids, plane_of_section_id=None, product_id=1
     criteria_0 = '[failed$eq\'false\'],products[id$eq{}],'.format(product_id)
     if type(plane_of_section_id) == int:
         criteria_1 = 'plane_of_section[id$eq{}],'.format(plane_of_section_id)
-    if plane_of_section_id is None:
+    elif plane_of_section_id is None:
         criteria_1 = ''
     raise_an_error = True
     if type(entrez_ids) == int:
         criteria_2 = 'genes[entrez_id$eq{}]'.format(entrez_ids)
         raise_an_error = False
-    if type(entrez_ids) == list:
+    elif type(entrez_ids) == list:
         criteria_2 = 'genes[entrez_id$in{}]'.format(entrez_ids)
         raise_an_error = False
-    if type(entrez_ids) is None:
+    elif type(entrez_ids) is None:
         criteria_2 = ''
         raise_an_error = False
-    if raise_an_error:
-        raise ValueError('Please enter an argument for entrez_ids of type int, list, or None')
+    elif raise_an_error:
+        raise TypeError('Please enter an argument for entrez_ids of type int, list, or None')
     criteria = criteria_0 + criteria_1 + criteria_2
     return criteria
 

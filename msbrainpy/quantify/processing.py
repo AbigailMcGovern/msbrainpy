@@ -23,13 +23,9 @@ from msbrainpy.base import extraListNesting
 
 # ------------------------------------------ 2D In Situ Related Functions ----------------------------------------------
 
-def do_gene_series(
-                   directory, 
-                   out_directory, 
+def do_gene_series(directory, out_directory, 
                    image_name_pattern=r'image_id-\d*.jpeg', 
-                   find_tissue_mask=True, 
-                   save_pc1=True
-     ):
+                   find_tissue_mask=True, save_pc1=True):
     """
     Process all images in an ish series (i.e., one brain). 
     
