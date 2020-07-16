@@ -4,6 +4,7 @@ import re
 from skimage import io
 from skimage import measure
 from msbrainpy.quantify.processing import find_gene_series_masks
+from tifffile import TiffWriter
 
 
 # ------------------------------------------ 3D Mapping Related Functions ----------------------------------------------
@@ -28,7 +29,7 @@ def runElastix(elastixBin, movingImage, fixedImage, parameterFiles, outDir):
     cmd = elastixBin + threads + moving + fixed + param + out
     print('Attempting to execute:')
     print(cmd)
-    result = os.system(cmd)
+    os.system(cmd)
     return outDir
 
 
@@ -136,7 +137,7 @@ def parseTransformixOutput(filePath):
         string = lines[i]
         match = re.findall(r'OutputPoint\s=\s\[\s\d+\.\d+\s\d+\.\d+\s\d+\.\d+', string)
         if len(match) != 0:
-            xyz = re.findall("\d+\.\d+", match[0])
+            xyz = re.findall(r"\d+\.\d+", match[0])
             row = []
             for cood in xyz:
                 asfloat = float(cood)
@@ -155,9 +156,9 @@ def getAtlasPoints(img, points):
     for i in range(len(indices)):
         if indices[i, 0] >= cellImg.shape[0]:
             indices[i, 0] = cellImg.shape[0] - 1
-        if indices[i, 1] >= cellImg.shape[1]:
+        elif indices[i, 1] >= cellImg.shape[1]:
             indices[i, 1] = cellImg.shape[1] - 1
-        if indices[i, 2] >= cellImg.shape[2]:
+        elif indices[i, 2] >= cellImg.shape[2]:
             indices[i, 2] = cellImg.shape[2] - 1
         cellImg[indices[i, 0], indices[i, 1], indices[i, 2]] += 1
     return cellImg
@@ -305,8 +306,8 @@ class VolumeAssembler:
             if verbose:
                 print('adding the data at z = {}'.format(z))
             # get the bounding box from each image
-            image_file_0 = image_file_pattern[:image_file_pattern.find('\d*')]
-            image_file_1 = image_file_pattern[image_file_pattern.find('\d*')+3:]
+            image_file_0 = image_file_pattern[:image_file_pattern.find(r'\d*')]
+            image_file_1 = image_file_pattern[image_file_pattern.find(r'\d*')+3:]
             image_file = image_file_0+str(z)+image_file_1
             image_file = os.path.join(directory, image_file)
             image = io.imread(image_file)

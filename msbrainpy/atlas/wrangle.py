@@ -164,6 +164,7 @@ def addCol_acronym(df, acronymCol, toAdd, toUse, tree, header, loc=0):
     return df
 
 def addCol_name(df, nameCol, toAdd, toUse, tree, header, loc=0):
+    structs_all = writeAllStructures(tree)
     additions = []
     for name in df[nameCol]:
         try:
@@ -222,6 +223,17 @@ def dropParents(df, tree, IDheader='structure_id'):
 def saveStructFiles(df, prefix, structName='Isocortex', regex='[A-Z]*[a-z]*\d.*',
                     reNames=['sanslayers', 'layers'], IDheader='structure_id',
                     tree=tree, acronymHeader='structure_acronym', exclude=None):
+    """
+    save dataframes containing only information about specified structure,
+    which should be specifed according to the structure ontology name.
+
+    Parameters
+    ----------
+    df: pd.DataFrame
+        Rows correspond to structures or brain sample x structure
+    prefix: str
+        Prefix with which to name 
+    """
     name = prefix + '_' + structName
     name0 = name + '.csv'
     struct = getStructDF(df, structName, tree, IDheader=IDheader)
