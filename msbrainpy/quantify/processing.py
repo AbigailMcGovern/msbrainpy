@@ -21,9 +21,6 @@ from tifffile import TiffWriter
 from msbrainpy.base import extraListNesting
 
 
-# helper functions -- find a place for this
-def _get_matches()
-
 # ---------------------------------------- Chain functionDictList functions --------------------------------------------
 
 def nuclearDetectionList(selem=6, min_sigma=0.25, max_sigma=5, threshold=0.04,
