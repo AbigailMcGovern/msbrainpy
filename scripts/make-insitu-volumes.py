@@ -1,7 +1,7 @@
 import os
 import napari
 from msbrainpy.brainseries import InSituSeries
-from msbrainpy.atlas import wrangle # too many functions are being imported? takes a long time.
+from msbrainpy.atlas import wrangle # this takes a while because AllenSDK structure tree is imported ... hmmm 
 from dask.distributed import Client
 from tifffile import TiffWriter
 
