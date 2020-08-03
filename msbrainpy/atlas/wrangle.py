@@ -218,6 +218,7 @@ def dropParents(df, tree, IDheader='structure_id'):
         b = strid in parents
         parentBool.append(b)
     out = dropBool(df, parentBool, todrop=True)
+    return out
 
 
 def saveStructFiles(df, prefix, structName='Isocortex', regex='[A-Z]*[a-z]*\d.*',
@@ -378,9 +379,8 @@ def meansSEMsSort(df, savename=None, groupby='structure_acronym'):
     if type(df) == dict:
         df_dict = df
         keys = list(df_dict.keys())
-        assert len(savenames) == len(keys)
         out = {}
-        for i in range(len(keys)):
+        for i, key in enumerate(keys):
             df = df_dict[keys[i]]
             name = key
             means = df.groupby([groupby]).mean()
