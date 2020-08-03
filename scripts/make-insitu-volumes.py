@@ -1,5 +1,4 @@
 import os
-import napari
 from msbrainpy.brainseries import InSituSeries
 from msbrainpy.atlas import wrangle # this takes a while because AllenSDK structure tree is imported ... hmmm 
 from dask.distributed import Client
@@ -33,6 +32,25 @@ name_pattern = r'image_id-\d*.jpeg'
 my_brain = InSituSeries(brain_directory, name_pattern)
 target = my_brain._target_volume
 save_at = os.path.join(gene_directory, 'InSituVolumes', 'Grin2b-age_id-15_id-74988710.tif')
+with TiffWriter(save_at) as tiff:
+    for i in range(target.shape[0]):
+        tiff.save(target[i, :, :])
+client.close()
+
+a_gene = genes[2]
+print(f'results from gene lucky dip: {a_gene}')
+# results from gene lucky dip: entrez_id_17202_Mc4r
+coronal_brains = list(gene_data_tree[a_gene]['plane_of_section-1'].keys())
+a_brain = coronal_brains[0]
+print(f'Your brain: {a_brain}')
+# Your brain: age_id-15_id-79556630
+brain_directory = os.path.join(gene_directory, a_gene, 'plane_of_section-1', a_brain)
+print(f'Your brain directory: {brain_directory}')
+# Your brain directory: /Users/amcg0011/Data/InSituData/entrez_id_17202_Mc4r/plane_of_section-1/age_id-15_id-79556630
+print(os.path.exists(brain_directory))
+my_brain = InSituSeries(brain_directory, name_pattern)
+target = my_brain._target_volume
+save_at = os.path.join(gene_directory, 'InSituVolumes', 'Mcr4-age_id-15_id-74988710.tif')
 with TiffWriter(save_at) as tiff:
     for i in range(target.shape[0]):
         tiff.save(target[i, :, :])
