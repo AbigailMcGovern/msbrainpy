@@ -35,7 +35,6 @@ save_at = os.path.join(gene_directory, 'InSituVolumes', 'Grin2b-age_id-15_id-749
 with TiffWriter(save_at) as tiff:
     for i in range(target.shape[0]):
         tiff.save(target[i, :, :])
-client.close()
 
 a_gene = genes[2]
 print(f'results from gene lucky dip: {a_gene}')
