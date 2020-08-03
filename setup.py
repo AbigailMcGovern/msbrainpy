@@ -8,7 +8,7 @@ setuptools.setup(
     version="0.0.1",
     author="Abigail S. McGovern",
     author_email="Abigail.McGovern@monash.edu",
-    description="Whole mouse brain image processing and analysis - integrated with AMBA",
+    description="MsBrainPy (noun). A python package relating to mouse brain data and Abigail's PhD",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/AbigailMcGovern/msbrainpy",

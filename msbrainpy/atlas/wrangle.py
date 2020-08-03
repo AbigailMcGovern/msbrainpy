@@ -164,6 +164,7 @@ def addCol_acronym(df, acronymCol, toAdd, toUse, tree, header, loc=0):
     return df
 
 def addCol_name(df, nameCol, toAdd, toUse, tree, header, loc=0):
+    structs_all = writeAllStructures(tree)
     additions = []
     for name in df[nameCol]:
         try:
@@ -217,11 +218,23 @@ def dropParents(df, tree, IDheader='structure_id'):
         b = strid in parents
         parentBool.append(b)
     out = dropBool(df, parentBool, todrop=True)
+    return out
 
 
 def saveStructFiles(df, prefix, structName='Isocortex', regex='[A-Z]*[a-z]*\d.*',
                     reNames=['sanslayers', 'layers'], IDheader='structure_id',
                     tree=tree, acronymHeader='structure_acronym', exclude=None):
+    """
+    save dataframes containing only information about specified structure,
+    which should be specifed according to the structure ontology name.
+
+    Parameters
+    ----------
+    df: pd.DataFrame
+        Rows correspond to structures or brain sample x structure
+    prefix: str
+        Prefix with which to name 
+    """
     name = prefix + '_' + structName
     name0 = name + '.csv'
     struct = getStructDF(df, structName, tree, IDheader=IDheader)
@@ -366,9 +379,8 @@ def meansSEMsSort(df, savename=None, groupby='structure_acronym'):
     if type(df) == dict:
         df_dict = df
         keys = list(df_dict.keys())
-        assert len(savenames) == len(keys)
         out = {}
-        for i in range(len(keys)):
+        for i, key in enumerate(keys):
             df = df_dict[keys[i]]
             name = key
             means = df.groupby([groupby]).mean()

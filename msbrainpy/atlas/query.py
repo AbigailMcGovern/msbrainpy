@@ -55,7 +55,7 @@ def rmaStructUniQuery(structureList, geneIDs, graph_id=1, product_id=1,
             print('maxLen default = 100, this is appropriate for genes with large numbers of experimental replicates')
             print('This value has no empirical basis, it was the first one that worked')
         counter = 0
-        for i in range(num):
+        for _ in range(num):
             if counter < (maxLen * (num - 1)):
                 structs = structureList[counter:counter + maxLen]
             else:
@@ -214,7 +214,7 @@ def get_section_grid(section_id, out_dir):
     with open(filename, 'wb') as file:
         file.write(response.content)
     with ZipFile(filename, 'r') as zip_obj:
-        zip_obj.extractall(out_dir
+        zip_obj.extractall(out_dir)
 
 
 # ----------------------------------------------- Find Data Sets -------------------------------------------------------

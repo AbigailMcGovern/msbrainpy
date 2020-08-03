@@ -1,3 +1,4 @@
+import json
 import numpy as np
 import matplotlib.pyplot as plt
 from msbrainpy.atlas.wrangle import matchRows, amalgamateDFs
@@ -123,7 +124,7 @@ def plotModel(df, colours, lines, namesHeader='names', valuesHeader='values',
               max_=0.16, min_=0.0, step=0.01):
     values = [i for i in df[valuesHeader]]
     names = [i for i in df[namesHeader]]
-    fig, ax = plt.subplots()
+    _, ax = plt.subplots()
     for i in range(len(values)):
         value = values[i]
         colour = colours[names[i]]
