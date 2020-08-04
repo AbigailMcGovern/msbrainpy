@@ -6,10 +6,11 @@ from skimage.morphology import cube
 from skimage.feature import blob_log
 from skimage.filters import median
 from skimage.draw import circle_perimeter
-from msbrainpy.base import extraListNesting, getSubsections
-from msbrainpy.chain import Chain, makeChainTemplateDict
-from msbrainpy.base import chunkGenerator
-from msbrainpy.quantify.processing import nuclearDetectionList, correctForChunk, extractChunkCorrected
+from tifffile import TiffWriter
+from msbrainpy.lightsheet.base import extraListNesting, getSubsections
+from msbrainpy.lightsheet.chain import Chain, makeChainTemplateDict
+from msbrainpy.lightsheet.base import chunkGenerator
+from msbrainpy.lightsheet.quantify.processing import nuclearDetectionList, correctForChunk, extractChunkCorrected
 
 
 # note: volume refers to a large volume which must be . Unfortunately confusing choice of wording
@@ -85,7 +86,7 @@ def processVolume(data, functionDictList, subsection, prefix, saveDir, z_size=50
     RETURNS: if used with default output settings, coordinates, which will be corrected for overlaps in subsections.
         type = np.ndarray
     """
-    if subsection is none:
+    if subsection is None:
         subsection = {'stackID': 0, 'x_start': 0, 'x_end': data.shape[2], 'y_start': 0, 'y_end': data.shape[1],
                       'overlap': noSubsection_overlap} # one limitation here is that the overlap that will be corrected
         #                                                   for will be this number. This means that objects at the
@@ -184,7 +185,7 @@ def getCellsInPlane(shape, points, order, prefix, index, plsmns):
 # -------------------------------------- Old (hopefully) unnecessary functions -----------------------------------------
 
 def cellsOnly(data, subsection, prefix, outDir, z_size=50,
-              min_sigma=0.25, max_sigma=10, threshold=0.04, **kwargs):
+              min_sigma=0.25, max_sigma=10, threshold=0.04, overlap=10, **kwargs):
     """
     FUNCTION: function to sequentially process chunks to retrive cell coordinates
     ARGUMENTS:
