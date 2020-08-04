@@ -3,22 +3,8 @@ import numpy as np
 from skimage import io
 from msbrainpy.brainseries import InSituSeries
 
-
-def test_InsituSeries():
-    """
-    test the current functional capacity of the 
-    """
-    temp = get_temp_directory()
-    make_fake_data(temp, 4000, 5000, 5)
-    name_pattern = r'.*\.jpg'
-    fake_brain = InSituSeries(temp, name_pattern)
-    # test the target brain (registration target) data type and dimensions
-    target_brain_tests(fake_brain)
-    # get the full image volume, a dask array
-    full_brain_tests(fake_brain)
-    remove_temp_data(temp)
-
-
+# Fake Data
+# ---------
 def get_temp_directory():
     """
     create temp directory
@@ -63,6 +49,24 @@ def remove_temp_data(temp):
         path = os.path.join(temp, file_)
         os.remove(path)
     os.rmdir(temp)
+    
+
+# InSituSeries 
+# ------------
+
+def test_InsituSeries():
+    """
+    test the current functional capacity of the 
+    """
+    temp = get_temp_directory()
+    make_fake_data(temp, 4000, 5000, 5)
+    name_pattern = r'.*\.jpg'
+    fake_brain = InSituSeries(temp, name_pattern)
+    # test the target brain (registration target) data type and dimensions
+    target_brain_tests(fake_brain)
+    # get the full image volume, a dask array
+    full_brain_tests(fake_brain)
+    remove_temp_data(temp)
 
 
 def target_brain_tests(fake_brain):

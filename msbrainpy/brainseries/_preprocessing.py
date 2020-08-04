@@ -11,7 +11,8 @@ from sklearn.decomposition import PCA
 # RGB preprocessing
 # -----------------
 # preprocessing for signal quantification
-def image_PCA(rgb_image, n_components=1, get_component=None, clip_neg=True):
+def image_PCA(image, n_components=1, get_component=None, clip_neg=True, 
+              rgb=True):
     """
     Get a pca-based intensity image. Designed to be used to extract highest
     shared variance components from RGB colour channels. PCA implemented
@@ -30,6 +31,8 @@ def image_PCA(rgb_image, n_components=1, get_component=None, clip_neg=True):
         get components chooses components --> pixel values
     clip_neg: bool, optional
         should the negative PCA values be cliped out to reduced noise
+    rgb: bool
+        Is the image rgb? If so, a white balancing function will be applied
 
     Returns
     -------
@@ -39,10 +42,6 @@ def image_PCA(rgb_image, n_components=1, get_component=None, clip_neg=True):
 
     Notes
     -----
-    Have only tested when retriving one component. 
-    Quite slow. Haven't tested, but would be the for loop.
-    This can be fixed, i'm sure.
-
     References:
     [1] The Image Processing Handbook, John C. Russ and F. Brent Neal. 
     CRC Press, Boca Raton, FL, 2015, 1053 pp. <include pages>
@@ -50,22 +49,26 @@ def image_PCA(rgb_image, n_components=1, get_component=None, clip_neg=True):
     [2] Neal, B. and Russ, J.C., 2004. Principal components analysis of 
     multispectral image data. Microscopy Today, 12(5), pp.36-39.
     """
-    rgb_image = _white_balancing(rgb_image)
-    image_dims = rgb_image.shape
-    flattened_image = rgb_image.reshape(-1, 3)
-    pca = PCA(n_components=n_components)
+    image_shape = image.shape
+    last = image_shape[-1]
+    # if the image is RGB perform white balancing
+    if rgb:
+        image = _white_balancing(image)
+    # flatten the image across all but the last dimension
+    flattened_image = image.reshape(-1, last)
+    # perform PCA
+    pca = PCA(n_components=last)
     image_pca = pca.fit_transform(flattened_image)
+    # get the component of interest
     if get_component is not None:
         image_pca = image_pca[:, get_component]
-    image_pca = image_pca.reshape((image_dims[0], image_dims[1]))
+        image_pca = image_pca.reshape((image_shape[0], image_shape[1]))
+    else:
+        image_pca = image_pca.reshape(image_shape)
+    # clip out negative values if specified
     if clip_neg:
-        # replace with a faster method. This could be unusably slow
-        # for many images
-        for y in range(image_pca.shape[0]):
-            for x in range(image_pca.shape[1]):
-                if image_pca[y, x] < 0:
-                    image_pca[y, x] = 0
-    # scale to [0,1]
+        image_pca = np.where(image_pca >= 0, image_pca, 0)
+    # scale to [0,1] - float image
     maximum = np.max(image_pca)
     image_pca = image_pca/maximum
     return image_pca

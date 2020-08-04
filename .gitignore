@@ -54,6 +54,9 @@ cover/
 # dask
 dask-worker-space/
 
+# other
+temp/
+
 # Translations
 *.mo
 *.pot
