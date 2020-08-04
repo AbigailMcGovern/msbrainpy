@@ -406,8 +406,8 @@ class BrainSeries:
             new_image[v_min_y:v_max_y, v_min_x:v_max_x] = image
         except ValueError:
             wrong_shape = np.array(new_image[v_min_y:v_max_y, v_min_x:v_max_x]
-                                   .shape)
-            img_shape = np.array(image.shape)
+                                   .shape[:2])
+            img_shape = np.array(image.shape[:2])
             new_coords = self._correct_coords_for_shape(img_shape, 
                                                         wrong_shape, 
                                                         (v_min_y, v_max_y,
