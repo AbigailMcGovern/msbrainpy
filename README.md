@@ -10,14 +10,12 @@ CURRENT:
   - visualise - plotting tools specific to anatomical data.
   - query - query the Allen Brain Institute's RMA API to obtain atlas-related data. Supports obtaining gridded gene expression data, Structure Unionize gene expression data, and raw insitu images. Plan to access GenePaint insitu images in the future.
 
-OLD - LIGHTSHEET:
-* io - reading and writing image data
-* base - a number of fundemental functions that didn't fit elsewhere
-* chain - several classes and functions for the serial processing of data using combinations of functions and specific arguments
-* teraPrep - writing and nameing files according to TeraStitcher input requirments (for stitching lightsheet output)
-* quantify - quantification of features (so far nuclear detection) in stitched light sheet data
-  - processing - smaller fundemental processing functions 
-  - sample - applying processing pipelines to a directory of images sampled from a stitched lightsheet data set
-  - volume - applying processing piplines to larger volumes
-* map - mapping quantifications onto an atlas
+OLD:
+* lightsheet
+  - io - reading and writing image data
+  - base - a number of fundemental functions that didn't fit elsewhere
+  - chain - several classes and functions for the serial processing of data using combinations of functions and specific arguments
+  - teraPrep - writing and nameing files according to TeraStitcher input requirments (for stitching lightsheet output)
+  - quantify - quantification of features (so far nuclear detection) in stitched light sheet data. {processing : smaller fundemental processing functions, sample : applying processing pipelines to a sample of stitched lightsheet data, volume : applying processing piplines to larger volumes}
+  - map - mapping quantifications onto an atlas
 
