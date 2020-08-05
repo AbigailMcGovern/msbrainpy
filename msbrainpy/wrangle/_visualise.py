@@ -1,7 +1,7 @@
 import json
 import numpy as np
 import matplotlib.pyplot as plt
-from msbrainpy.atlas.wrangle import matchRows, amalgamateDFs
+from ._summary_stats import matchRows, amalgamateDFs
 
 # -------------------------------------------------- Globals -----------------------------------------------------------
 defaultColours = {'prefrontal': 'purple', 'somatomotor': 'pink', 'anterolateral': 'blue', 'temporal': 'green',
