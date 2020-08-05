@@ -75,7 +75,6 @@ class InSituSeries(BrainSeries):
         tissue_mask or (tissue_mask, grey): np.ndarray of bool or tuple of 
         np.ndarray of bool and np.ndarray of unit8
 
-
         Notes
         -----
         Needs some work. There are some holes in the masks where the tissue is 
@@ -125,9 +124,6 @@ class InSituSeries(BrainSeries):
         # cellularly dense areas, which tend to pick up dye without appreciable 
         # expression and may look high contrast when no real signal is present 
         pass
-
-
-
 
 
 # -----------------------------------------------------------------------------
