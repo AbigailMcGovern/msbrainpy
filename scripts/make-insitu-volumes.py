@@ -1,6 +1,6 @@
 import os
 from msbrainpy.brainseries import InSituSeries
-from msbrainpy.atlas import wrangle # this takes a while because AllenSDK structure tree is imported ... hmmm 
+from msbrainpy.data import get_image_addresses # this takes a while because AllenSDK structure tree is imported ... hmmm 
 from dask.distributed import Client
 from tifffile import TiffWriter
 
