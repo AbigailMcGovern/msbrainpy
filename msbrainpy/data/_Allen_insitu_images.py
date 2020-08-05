@@ -3,26 +3,42 @@ import os
 import requests
 from skimage import io
 
+# Allen Institute in situ data (jpeg)
+def download_gene_images(entrez_id, 
+                         directory_path=None, 
+                         age_id=15, 
+                         product_id=1, 
+                         verbose=False):
+    download_from_section_data_set(get_section_images, 
+                                   entrez_id, 
+                                   directory_path=directory_path, 
+                                   age_id=age_id, 
+                                   product_id=product_id, 
+                                   verbose=verbose)
 
-def download_gene_images(entrez_id, directory_path=None, age_id=15, product_id=1, verbose=False):
-    download_from_section_data_set(get_section_images, entrez_id, directory_path=directory_path, age_id=age_id, 
-                                   product_id=product_id, verbose=verbose)
 
-
-def get_section_images(data_set_id, out_dir, verbose=False):
-    section_images = section_image_query(data_set_id, verbose=verbose)
-    download_section_images(section_images, out_dir, check_img_exists=True, return_img_n=None)
+def get_section_images(data_set_id, 
+                       out_dir, 
+                       verbose=False):
+    section_images = section_image_query(data_set_id, 
+                                         verbose=verbose)
+    download_section_images(section_images, 
+                            out_dir, 
+                            check_img_exists=True, 
+                            return_img_n=None)
 
 
 # function for retrieving lists of images for a given data set
 def section_image_query(data_set_id, verbose=True):
-    url_0 = "http://api.brain-map.org/api/v2/data/query.json?criteria=model::SectionImage,rma::criteria,"
-    url_1 = '[data_set_id$eq{}]'.format(data_set_id)
-    url = url_0 + url_1
+    url_0 = "http://api.brain-map.org/api/v2/data/query.json?"
+    url_1 = "criteria=model::SectionImage,rma::criteria,"
+    url_2 = f'[data_set_id$eq{data_set_id}]'
+    url = url_0 + url_1 + url_2
     response = requests.get(url)
     image_json = response.json()
     if verbose:
-        print(f'{image_json["num_rows"]} images matching the criteria were found')
+        m = f'{image_json["num_rows"]} images matching the criteria were found'
+        print(m)
     return image_json
 
 
@@ -53,38 +69,60 @@ def download_image(image_id, filename, return_image=False):
         return img
 
 
-def download_from_section_data_set(func, entrez_id, directory_path=None, age_id=15, product_id=1, verbose=False):
-    section_data_set = section_data_set_query(entrez_id, plane_of_section=None, product_id=product_id,
+def download_from_section_data_set(func, 
+                                   entrez_id, 
+                                   directory_path=None, 
+                                   age_id=15, 
+                                   product_id=1, 
+                                   verbose=False):
+    section_data_set = section_data_set_query(entrez_id, 
+                                              plane_of_section=None, 
+                                              product_id=product_id,
                                               verbose=verbose)
-    dirname = 'entrez_id_' + str(entrez_id) + '_' + section_data_set['msg'][0]['genes'][0]['acronym']
+    gene_name = section_data_set['msg'][0]['genes'][0]['acronym']
+    d = f'entrez_id_{entrez_id}_'
+    dirname = d + gene_name
     if directory_path is not None:
         dirname = os.path.join(directory_path, dirname)
     os.makedirs(dirname, exist_ok=True)
-    plane_of_section_ids = [row['plane_of_section_id'] for row in section_data_set['msg']]
+    plane_of_section_ids = [row['plane_of_section_id'] 
+                            for row in section_data_set['msg']]
     for plane_of_section in list(set(plane_of_section_ids)):
-        dirname_plane_of_section_id = 'plane_of_section-' + str(plane_of_section)
-        dirname_plane_of_section_id = os.path.join(dirname, dirname_plane_of_section_id)
+        d = f'plane_of_section-{plane_of_section}'
+        dirname_plane_of_section_id = os.path.join(dirname, d)
         os.makedirs(dirname_plane_of_section_id, exist_ok=True)
         for row in section_data_set['msg']:
             if row['plane_of_section_id'] == plane_of_section:
-                if age_id is None or row['reference_space']['age_id'] == age_id:
-                    dirname_section_id = 'age_id-' + str(row['reference_space']['age_id']) + '_id-' + str(row['id'])
+                age = row['reference_space']['age_id']
+                if age_id is None or age == age_id:
+                    d = f'age_id-{age}'
+                    id_ = row['id']
+                    dirname_section_id = d + f'_id-{id_}'
                     os.makedirs(dirname_section_id, exist_ok=True)
                     out_dir = os.path.join(dirname_plane_of_section_id, dirname_section_id)
                     func(row['id'], out_dir)
 
 
 # function for retrieving section data sets for a gene or genes
-def section_data_set_query(entrez_ids, plane_of_section=None, product_id=1, write_out=None, verbose=True):
-    criteria = section_data_set_criteria(entrez_ids, plane_of_section, product_id=product_id)
-    url_0 = "http://api.brain-map.org/api/v2/data/query.json?criteria=model::SectionDataSet,rma::criteria,"
+def section_data_set_query(entrez_ids, 
+                           plane_of_section=None, 
+                           product_id=1, 
+                           write_out=None, 
+                           verbose=True):
+    criteria = section_data_set_criteria(entrez_ids, 
+                                         plane_of_section, 
+                                         product_id=product_id)
+    url_ = "http://api.brain-map.org/api/v2/data/query.json?"
+    url_0 = "criteria=model::SectionDataSet,rma::criteria,"
     url_1 = criteria
     url_3 = ',rma::include,genes,reference_space'
-    url = url_0 + url_1 + url_3
+    url = url_ + url_0 + url_1 + url_3
     response = requests.get(url)
     sections = response.json()
     if verbose:
-        print('{} samples matching the criteria were found'.format(sections['num_rows']))
+        num_rows = sections['num_rows']
+        m = f'{num_rows} samples matching the criteria were found'
+        print(m)
     if write_out is not None:
         with open(write_out, 'w') as outfile:
             json.dump(sections, outfile)
@@ -94,36 +132,62 @@ def section_data_set_query(entrez_ids, plane_of_section=None, product_id=1, writ
 
 
 # function for composing criteria string for experiment search
-def section_data_set_criteria(entrez_ids, plane_of_section_id=None, product_id=1):
+def section_data_set_criteria(entrez_ids, 
+                              plane_of_section_id=None, 
+                              product_id=1):
     """
-    FUNCTION: This returns a criteria string with which to query the allen rma api
-    ARGS:
-        :param entrez_ids: gene id or ids (int, list, None)
-        :param plane_of_section_id: 1 -> coronal, 2 -> saggital (None, int)
-        :param product_id: Mouse -> 1, default=1 (int)
-    RETURNS:
+    get a criteria string with which to query the allen rma api
+
+    Parameters
+    ----------
+    entrez_ids: int, list, or None
+        gene id or ids 
+    plane_of_section_id: int, None
+        1 -> coronal, 2 -> saggital 
+    product_id: int
+        Mouse -> 1, default=1
+    
+    Returns
+    -------
         :return: rma criteria (str)
 
+    Notes
+    -----
     Example of successful criteria:
-    rma::criteria,[failed$eq'false'],products[id$eq1],plane_of_section[id$eq1],genes[entrez_id$eq14432]
-        TIP: Play with the RMA Query builder to find out about query options and variable results
+    rma::criteria,[failed$eq'false'],products[id$eq1],plane_of_section[id$eq1]
+        ,genes[entrez_id$eq14432]
+    TIP: Play with the RMA Query builder to find out about query options 
+    and variable results
     """
-    criteria_0 = '[failed$eq\'false\'],products[id$eq{}],'.format(product_id)
+    criteria_0 = f'[failed$eq\'false\'],products[id$eq{product_id}],'
     if type(plane_of_section_id) == int:
-        criteria_1 = 'plane_of_section[id$eq{}],'.format(plane_of_section_id)
+        criteria_1 = 'plane_of_section[id$eq{plane_of_section_id}],'
     elif plane_of_section_id is None:
         criteria_1 = ''
     raise_an_error = True
     if type(entrez_ids) == int:
-        criteria_2 = 'genes[entrez_id$eq{}]'.format(entrez_ids)
+        criteria_2 = 'genes[entrez_id$eq{entrez_ids}]'
         raise_an_error = False
     elif type(entrez_ids) == list:
-        criteria_2 = 'genes[entrez_id$in{}]'.format(entrez_ids)
+        criteria_2 = 'genes[entrez_id$in{entrez_ids}]'
         raise_an_error = False
     elif type(entrez_ids) is None:
         criteria_2 = ''
         raise_an_error = False
     elif raise_an_error:
-        raise TypeError('Please enter an argument for entrez_ids of type int, list, or None')
+        m = 'Please enter an argument for entrez_ids of int, list, or None'
+        raise TypeError(m)
     criteria = criteria_0 + criteria_1 + criteria_2
     return criteria
+
+    
+# Some examples ------------------------------------------
+# Gap43 entrez id is 14432 -------------------------------
+# gap43_section_data_set = section_data_set_query(14432)
+# gap43_section0_ims_json = section_image_query(gap43_section_data_set['msg'][0]['id'])
+# img15 = download_section_images(gap43_section0_ims_json, 'gap43_79669511', return_img_n=15)
+# download_gene_images(14432, age_id=15, product_id=1, verbose=True)
+# get_gridded_data(14432, age_id=None, product_id=1, verbose=False) # need to make obtain intensity/density
+
+# Bdnf entrez id is 12064 --------------------------------
+# download_gene_images(12064, age_id=None, product_id=1, verbose=True)
