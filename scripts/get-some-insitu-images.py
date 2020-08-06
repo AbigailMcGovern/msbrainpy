@@ -19,7 +19,7 @@ download_gene_images(entrez_id=14812, directory_path=gene_directory)
 # get the image paths for genes avaliable in the gene data directory
 gene_data_tree = get_image_addresses(gene_directory, age_id=None)
 
-# get segmented images, PC1 images, and tissue masks for one of the samples in this gene data set
+
 genes = list(gene_data_tree.keys())
 # Out[12]:
 # ['entrez_id_12064_Bdnf',

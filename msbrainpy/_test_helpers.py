@@ -1,6 +1,7 @@
 import os
 import time
-from dask.distributed import Client
+from multiprocessing import Process
+
 
 def get_temp_directory():
     """
@@ -16,10 +17,21 @@ def remove_temp_data(temp):
     """
     Remove the data in the temp directory (param: temp)
     """
-    files = os.listdir(temp)
-    for file_ in files:
-        path = os.path.join(temp, file_)
-        os.remove(path)
+    walker = os.walk(temp, topdown=False)
+    file_names = []
+    dir_names = []
+    for root, dirs, files in walker:
+        for file_ in files:
+            name = os.path.join(root, file_)
+            file_names.append(name)
+        for dir_ in dirs:
+            name = os.path.join(root, dir_)
+            dir_names.append(name)
+    # print(file_names)
+    for file_ in file_names:
+        os.remove(file_)
+    for dir_ in dir_names:
+        os.rmdir(dir_)
     os.rmdir(temp)
     
 
@@ -37,12 +49,11 @@ def timeout_function(func, kw, timeout):
     timeout: int
         number of seconds for which to wait before cancelling the future
     """
-    c = Client()
-    future = c.submit(func, **kw)
-    time.sleep(timeout)
-    c.cancel(future)
     f = func.__name__
-    if future.cancelled():
+    p = Process(target=func, kwargs=kw, name=f)
+    p.start()
+    time.sleep(timeout)
+    p.terminate()
+    if not p.is_alive():
         m = f'The function {f} was cancelled after {timeout} seconds'
         print(m)
-    c.close()

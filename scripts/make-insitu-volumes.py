@@ -8,7 +8,7 @@ client = Client() # pretty sure this is unnecessary
 # The dask docs indicate that a client will be created and closed
 # where required, but was unsure. 
 
-gene_directory = gene_directory = '/Users/amcg0011/Data/InSituData'
+gene_directory = '/Users/amcg0011/Data/InSituData'
 gene_data_tree = get_image_addresses(gene_directory, age_id=None)
 genes = list(gene_data_tree.keys())
 a_gene = genes[1]

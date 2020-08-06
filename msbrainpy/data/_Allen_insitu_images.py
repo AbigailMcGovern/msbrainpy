@@ -161,15 +161,15 @@ def section_data_set_criteria(entrez_ids,
     """
     criteria_0 = f'[failed$eq\'false\'],products[id$eq{product_id}],'
     if type(plane_of_section_id) == int:
-        criteria_1 = 'plane_of_section[id$eq{plane_of_section_id}],'
+        criteria_1 = f'plane_of_section[id$eq{plane_of_section_id}],'
     elif plane_of_section_id is None:
         criteria_1 = ''
     raise_an_error = True
     if type(entrez_ids) == int:
-        criteria_2 = 'genes[entrez_id$eq{entrez_ids}]'
+        criteria_2 = f'genes[entrez_id$eq{entrez_ids}]'
         raise_an_error = False
     elif type(entrez_ids) == list:
-        criteria_2 = 'genes[entrez_id$in{entrez_ids}]'
+        criteria_2 = f'genes[entrez_id$in{entrez_ids}]'
         raise_an_error = False
     elif type(entrez_ids) is None:
         criteria_2 = ''

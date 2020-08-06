@@ -1,12 +1,12 @@
 import os
 from msbrainpy.data import download_gene_images, get_image_addresses
 from msbrainpy._test_helpers import get_temp_directory, remove_temp_data, \
-    timeout_function
+     timeout_function
 from skimage.io import imread
 
 
 grin3a = 242443 # entrez id for gene
-timeout = 120 # number of seconds to allow download to continue
+timeout = 60 # number of seconds to allow download to continue
 
 
 def test_download_gene_images(gene=grin3a, timeout=timeout):
@@ -23,6 +23,7 @@ def test_download_gene_images(gene=grin3a, timeout=timeout):
     """
     temp = get_temp_directory()
     _download_images_wrapper(temp, gene, timeout)
+    # download_gene_images(gene, directory_path=temp)
     _get_image_test(temp)
     remove_temp_data(temp)
 
@@ -56,7 +57,7 @@ def _get_image_test(temp):
     assert ck, pf + ck
 
 
-test_download_gene_images(gene=grin3a, timeout=timeout)
+#test_download_gene_images(gene=grin3a, timeout=timeout)
 
 # def func(line):
     # with open('a.txt', 'w') as f:
@@ -64,6 +65,6 @@ test_download_gene_images(gene=grin3a, timeout=timeout)
     # time.sleep(10)
     # with open('b.txt', 'w') as f:
         # f.write(line)
-#_timeout_function(func, {'line': 'a line'}, 2)
+#timeout_function(func, {'line': 'a line'}, 2)
 
 
