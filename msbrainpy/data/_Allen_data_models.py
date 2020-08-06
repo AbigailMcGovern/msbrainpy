@@ -6,7 +6,7 @@ import pandas as pd
 from skimage import io
 from zipfile import ZipFile
 from allensdk.api.queries.rma_api import RmaApi
-from ._insitu_images import download_from_section_data_set
+from ._Allen_insitu_images import download_from_section_data_set
 
 # -----------------------------------------------------------------------------
 # Structure Unionize Data 

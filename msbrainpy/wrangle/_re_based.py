@@ -45,20 +45,3 @@ def drop_reRows(df, strColHeader, regex=r'[A-Z]*[a-z]*\d.*', remove=True):
     out = dropBool(df, matches, todrop=remove)
     return out
 
-def addLayer(df, acronymHeader):
-    out = df.copy()
-    regex = r'[A-Z]*.*[a-z]*\d.*'
-    pattern = re.compile(regex)
-    d = r'\d.*'
-    digit = re.compile(d)
-    layers = []
-    for string in df[acronymHeader]:
-        try:
-            match = pattern.match(string)[0]
-            layer = digit.findall(match)[0]
-            layers.append(layer)
-        except TypeError:
-            print('A layer could not be identified in {}'.format(string))
-            layers.append('NA')
-    out['cortical_layer'] = layers
-    return out

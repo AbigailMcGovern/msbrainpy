@@ -34,7 +34,7 @@ def get_gene_section_paths(gene_section_path, age_id=None):
     if age_id is not None:
         string = r'age_id-{}_id-\d*'.format(age_id)
     else:
-        string = r'age_id-{}\d*_id-\d*'.format(age_id)
+        string = r'age_id-\d*_id-\d*'
     pattern = re.compile(string)
     for plane_of_section in plane_of_section_directories:
         key = re.compile(r'plane_of_section-[1-2]').findall(plane_of_section)[0]

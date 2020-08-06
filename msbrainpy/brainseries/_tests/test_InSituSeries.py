@@ -2,18 +2,10 @@ import os
 import numpy as np
 from skimage import io
 from msbrainpy.brainseries import InSituSeries
+from msbrainpy._test_helpers import get_temp_directory, remove_temp_data
 
 # Fake Data
 # ---------
-def get_temp_directory():
-    """
-    create temp directory
-    """
-    current = os.getcwd()
-    temp = os.path.join(current, "temp")
-    os.makedirs(temp, exist_ok=True)
-    return temp
-
 
 def make_fake_data(temp, y, x, num):
     """
@@ -39,17 +31,6 @@ def make_fake_data(temp, y, x, num):
         name = os.path.join(temp, (str(num) + '.jpg'))
         io.imsave(name, image, plugin='pil')
 
-
-def remove_temp_data(temp):
-    """
-    Remove the data in the temp directory (param: temp)
-    """
-    files = os.listdir(temp)
-    for file_ in files:
-        path = os.path.join(temp, file_)
-        os.remove(path)
-    os.rmdir(temp)
-    
 
 # InSituSeries 
 # ------------
