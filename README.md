@@ -1,5 +1,5 @@
 # msbrainpy
-A Python package relating to mouse brains (i.e., the 'ms' and 'brain' parts) and Abigail's PhD (vaguely enough). Clearly taking the descriptions very seriously... 
+A Python package relating to mouse brains (i.e., the 'ms' and 'brain' parts). 
 
 
 ## Contents
